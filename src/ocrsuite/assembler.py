@@ -3,9 +3,9 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-from .utils import ensure_directory, ExtractionError
+from .utils import ExtractionError, ensure_directory
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class OutputAssembler:
         """
         self.output_dir = ensure_directory(output_dir)
         self.debug = debug
-        self.metadata = {
+        self.metadata: dict[str, Any] = {
             "created": datetime.now().isoformat(),
             "pages_processed": 0,
             "errors": [],
@@ -116,14 +116,14 @@ class OutputAssembler:
         except Exception as e:
             raise ExtractionError(f"Failed to save image: {e}") from e
 
-    def save_metadata(self, filename: str = "metadata.txt") -> Path:
+    def save_metadata(self, filename: str = "metadata.txt") -> Optional[Path]:
         """Save processing metadata.
 
         Args:
             filename: Output filename.
 
         Returns:
-            Path to saved metadata file.
+            Path to saved metadata file, or None if save fails.
         """
         try:
             output_path = self.output_dir / filename
@@ -145,9 +145,7 @@ class OutputAssembler:
             return None
 
     @staticmethod
-    def _build_latex_preamble(
-        title: Optional[str] = None, author: Optional[str] = None
-    ) -> str:
+    def _build_latex_preamble(title: Optional[str] = None, author: Optional[str] = None) -> str:
         """Build LaTeX document preamble.
 
         Args:
@@ -169,9 +167,9 @@ class OutputAssembler:
         if title or author:
             preamble += "\n"
             if title:
-                preamble += f'\n\\title{{{title}}}\n'
+                preamble += f"\n\\title{{{title}}}\n"
             if author:
-                preamble += f'\n\\author{{{author}}}\n'
+                preamble += f"\n\\author{{{author}}}\n"
             preamble += "\n\\maketitle"
 
         return preamble

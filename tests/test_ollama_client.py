@@ -1,10 +1,7 @@
 """Tests for Ollama client."""
 
-import pytest
-
 from ocrsuite.config import OllamaConfig
 from ocrsuite.ollama_client import OllamaClient
-from ocrsuite.utils import OllamaError
 
 
 def test_ollama_client_init():

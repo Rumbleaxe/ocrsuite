@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List
 
 import pdfplumber
-from PIL import Image
 
 from .utils import PreprocessingError, ensure_directory
 
@@ -49,9 +48,7 @@ class PDFPreprocessor:
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 total_pages = len(pdf.pages)
-                pages_to_process = (
-                    min(max_pages, total_pages) if max_pages else total_pages
-                )
+                pages_to_process = min(max_pages, total_pages) if max_pages else total_pages
 
                 logger.info(f"Converting {pages_to_process} pages from {pdf_path.name}")
 
@@ -65,19 +62,13 @@ class PDFPreprocessor:
                         image.save(output_path, "PNG")
                         image_paths.append(output_path)
 
-                        logger.debug(
-                            f"Processed page {page_num + 1}/{pages_to_process}"
-                        )
+                        logger.debug(f"Processed page {page_num + 1}/{pages_to_process}")
 
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to process page {page_num + 1}: {e}"
-                        )
+                        logger.warning(f"Failed to process page {page_num + 1}: {e}")
                         continue
 
-                logger.info(
-                    f"Successfully converted {len(image_paths)}/{pages_to_process} pages"
-                )
+                logger.info(f"Successfully converted {len(image_paths)}/{pages_to_process} pages")
 
         except Exception as e:
             raise PreprocessingError(f"PDF processing failed: {e}") from e

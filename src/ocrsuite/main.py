@@ -1,12 +1,10 @@
 """Main CLI entry point for OCRSuite."""
 
-import logging
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.logging import RichHandler
 from rich.progress import Progress
 
 from . import __version__
@@ -14,7 +12,7 @@ from .assembler import OutputAssembler
 from .config import Config
 from .ollama_client import OllamaClient
 from .preprocessor import PDFPreprocessor
-from .utils import setup_logging, OCRSuiteError
+from .utils import OCRSuiteError, setup_logging
 
 app = typer.Typer(
     name="ocrsuite",
@@ -75,9 +73,7 @@ def process(
     try:
         with Progress(console=console) as progress:
             # Load configuration
-            task_config = progress.add_task(
-                "[cyan]Loading configuration...", total=None
-            )
+            task_config = progress.add_task("[cyan]Loading configuration...", total=None)
             if config:
                 cfg = Config.from_file(config)
             else:
@@ -89,15 +85,10 @@ def process(
                 cfg.pdf.max_pages = max_pages
 
             progress.update(task_config, completed=True)
-            console.print(
-                f"[green]✓[/green] Configuration loaded "
-                f"(model: {cfg.ollama.model})"
-            )
+            console.print(f"[green]✓[/green] Configuration loaded (model: {cfg.ollama.model})")
 
             # Check Ollama health
-            task_ollama = progress.add_task(
-                "[cyan]Checking Ollama connection...", total=None
-            )
+            task_ollama = progress.add_task("[cyan]Checking Ollama connection...", total=None)
             client = OllamaClient(cfg.ollama)
             if not client.health_check():
                 progress.update(task_ollama, visible=False)
@@ -106,33 +97,23 @@ def process(
                     "Start it with: [bold]ollama serve[/bold]\n"
                     "Then pull a model: [bold]ollama pull llama2-vision[/bold]"
                 )
-                raise OCRSuiteError(
-                    f"Could not connect to Ollama at {cfg.ollama.url}"
-                )
+                raise OCRSuiteError(f"Could not connect to Ollama at {cfg.ollama.url}")
 
             progress.update(task_ollama, completed=True)
-            console.print(
-                f"[green]✓[/green] Connected to Ollama at {cfg.ollama.url}"
-            )
+            console.print(f"[green]✓[/green] Connected to Ollama at {cfg.ollama.url}")
 
             # Preprocess PDF
-            task_preprocess = progress.add_task(
-                "[cyan]Converting PDF to images...", total=None
-            )
+            task_preprocess = progress.add_task("[cyan]Converting PDF to images...", total=None)
             preprocessor = PDFPreprocessor(dpi=cfg.pdf.dpi)
             pdf_info = preprocessor.get_pdf_info(input)
-            console.print(
-                f"[bold]PDF Info:[/bold] {pdf_info['page_count']} pages"
-            )
+            console.print(f"[bold]PDF Info:[/bold] {pdf_info['page_count']} pages")
 
             temp_images_dir = Path(output) / ".temp_images"
             image_paths = preprocessor.pdf_to_images(
                 input, temp_images_dir, max_pages=cfg.pdf.max_pages
             )
             progress.update(task_preprocess, completed=True)
-            console.print(
-                f"[green]✓[/green] Converted {len(image_paths)} pages to images"
-            )
+            console.print(f"[green]✓[/green] Converted {len(image_paths)} pages to images")
 
             # Initialize output
             assembler = OutputAssembler(Path(output), debug=cfg.output.debug_mode)
@@ -156,16 +137,10 @@ def process(
                         text = client.extract_table(image_path)
                     elif classification["type"] == "figure":
                         # Save figure directly
-                        figure_num = len(
-                            [
-                                p
-                                for p in Path(output).glob("figure_*.png")
-                                if p.is_file()
-                            ]
-                        ) + 1
-                        assembler.save_image(
-                            image_path, f"figure_{figure_num:03d}.png"
+                        figure_num = (
+                            len([p for p in Path(output).glob("figure_*.png") if p.is_file()]) + 1
                         )
+                        assembler.save_image(image_path, f"figure_{figure_num:03d}.png")
                         text = f"[Figure {figure_num} - see figure_{figure_num:03d}.png]"
                     else:
                         text = "[Unrecognized content]"
@@ -181,9 +156,7 @@ def process(
                     assembler.increment_pages()
 
                 except Exception as e:
-                    console.print(
-                        f"[yellow]⚠ Error processing {image_path.name}: {e}[/yellow]"
-                    )
+                    console.print(f"[yellow]⚠ Error processing {image_path.name}: {e}[/yellow]")
                     assembler.record_error(f"{image_path.name}: {e}")
 
                 finally:
@@ -217,13 +190,13 @@ def process(
             # Success summary
             console.print("\n[bold green]✓ Processing Complete![/bold green]\n")
             console.print(f"[bold]Output Directory:[/bold] {Path(output).resolve()}")
-            console.print(f"[bold]Files Generated:[/bold]")
-            console.print(f"  - document.tex (LaTeX)")
-            console.print(f"  - extraction.md (Markdown)")
+            console.print("[bold]Files Generated:[/bold]")
+            console.print("  - document.tex (LaTeX)")
+            console.print("  - extraction.md (Markdown)")
             console.print(
                 f"  - figure_*.png ({len(list(Path(output).glob('figure_*.png')))} figures)"
             )
-            console.print(f"  - metadata.txt")
+            console.print("  - metadata.txt")
 
             # Cleanup temp images if not debug mode
             if not cfg.output.debug_mode and temp_images_dir.exists():

@@ -39,6 +39,8 @@ dev = [
     "pytest-cov>=4.1.0",
     "ruff>=0.1.0",             # All-in-one: linter, formatter, type-checker
     "mypy>=1.5.0",
+    "types-PyYAML>=6.0",
+    "types-requests>=2.31.0",
 ]
 
 [project.scripts]
@@ -87,10 +89,5 @@ ignore = [
     "E501",   # Line too long (handled by formatter)
 ]
 
-[tool.ruff.lint.isort]
-profile = "black"
-line-length = 100
-
 [tool.ruff.format]
-line-length = 100
 quote-style = "double"

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from ocrsuite.config import Config, OCRConfig, OllamaConfig, OutputConfig, PDFConfig
+from ocrsuite.config import Config
 
 
 def test_config_defaults():

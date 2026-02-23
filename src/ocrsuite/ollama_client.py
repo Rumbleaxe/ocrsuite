@@ -4,10 +4,8 @@ import base64
 import logging
 import time
 from pathlib import Path
-from typing import Optional
 
 import requests
-from PIL import Image
 
 from .config import OllamaConfig
 from .utils import OllamaError
@@ -38,8 +36,7 @@ class OllamaClient:
         try:
             response = requests.get(f"{self.url}/api/tags", timeout=5)
             return response.status_code == 200
-        except Exception as e:
-            logger.warning(f"Ollama health check failed: {e}")
+        except Exception:
             return False
 
     def ocr_image(self, image_path: Path, prompt: str = "") -> str:
@@ -143,9 +140,7 @@ class OllamaClient:
 
         return self._call_vision_model(image_path, prompt)
 
-    def _call_vision_model(
-        self, image_path: Path, prompt: str, retry: int = 0
-    ) -> str:
+    def _call_vision_model(self, image_path: Path, prompt: str, retry: int = 0) -> str:
         """Call Ollama vision model with retry logic.
 
         Args:
@@ -176,16 +171,15 @@ class OllamaClient:
             )
 
             if response.status_code != 200:
-                raise OllamaError(
-                    f"Ollama returned status {response.status_code}: "
-                    f"{response.text}"
-                )
+                raise OllamaError(f"Ollama returned status {response.status_code}: {response.text}")
 
-            return response.json().get("response", "").strip()
+            data = response.json()
+            result = data.get("response", "")
+            return str(result).strip()
 
         except requests.ConnectionError as e:
             if retry < self.max_retries:
-                wait_time = 2 ** retry
+                wait_time = 2**retry
                 logger.warning(
                     f"Connection failed, retrying in {wait_time}s "
                     f"(attempt {retry + 1}/{self.max_retries})"
@@ -193,14 +187,11 @@ class OllamaClient:
                 time.sleep(wait_time)
                 return self._call_vision_model(image_path, prompt, retry + 1)
             raise OllamaError(
-                f"Could not connect to Ollama at {self.url}. "
-                "Is it running? Try: ollama serve"
+                f"Could not connect to Ollama at {self.url}. Is it running? Try: ollama serve"
             ) from e
 
         except requests.Timeout as e:
-            raise OllamaError(
-                f"Ollama request timed out after {self.timeout}s"
-            ) from e
+            raise OllamaError(f"Ollama request timed out after {self.timeout}s") from e
 
         except Exception as e:
             raise OllamaError(f"Ollama API call failed: {e}") from e
