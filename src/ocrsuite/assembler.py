@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from .latex_verifier import LaTeXVerifier
 from .utils import ExtractionError, ensure_directory
 
 logger = logging.getLogger(__name__)
@@ -14,36 +13,37 @@ logger = logging.getLogger(__name__)
 class OutputAssembler:
     """Assemble extracted content into output files."""
 
-    def __init__(self, output_dir: Path, debug: bool = False):
+    def __init__(self, output_dir: Path, source_filename: str = "document", debug: bool = False):
         """Initialize assembler.
 
         Args:
             output_dir: Directory for output files.
+            source_filename: Original filename (without extension) for naming outputs.
             debug: If True, save intermediate data.
         """
         self.output_dir = ensure_directory(output_dir)
+        self.source_filename = source_filename
         self.debug = debug
-        self.verifier = LaTeXVerifier()
+        self.timestamp = datetime.now().strftime("%d%m%y_%H%M%S")
+        self.figures_dir = None
         self.metadata: dict[str, Any] = {
             "created": datetime.now().isoformat(),
             "pages_processed": 0,
             "errors": [],
         }
 
-    def save_latex(
+    def save_markdown(
         self,
         content: str,
-        filename: str = "document.tex",
+        filename: Optional[str] = None,
         title: Optional[str] = None,
-        author: Optional[str] = None,
     ) -> Path:
-        """Save content as LaTeX document.
+        """Save content as single Markdown file with linked figures.
 
         Args:
-            content: LaTeX content (body).
-            filename: Output filename.
-            title: Document title.
-            author: Document author.
+            content: Markdown content with figure references.
+            filename: Output filename (default: DDMMYY_HHMMSS_sourcename.md).
+            title: Document title for header.
 
         Returns:
             Path to saved file.
@@ -52,47 +52,31 @@ class OutputAssembler:
             ExtractionError: If save fails.
         """
         try:
-            # Build complete LaTeX document
-            preamble = self._build_latex_preamble(title, author)
-            full_content = (
-                f"{preamble}\n\n\\begin{{document}}\n\n{content}\n\n\\end{{document}}\n"
-            )
+            if filename is None:
+                filename = f"{self.timestamp}_{self.source_filename}.md"
+
+            # Build markdown with header
+            md_lines = []
+            if title:
+                md_lines.append(f"# {title}\n")
+                md_lines.append(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n")
+            
+            md_lines.append(content)
+
+            # Add metadata section at end
+            if self.metadata["errors"]:
+                md_lines.append("\n---\n")
+                md_lines.append("## Processing Notes\n")
+                md_lines.append(f"- Pages processed: {self.metadata['pages_processed']}\n")
+                md_lines.append(f"- Errors: {len(self.metadata['errors'])}\n")
+                for error in self.metadata["errors"]:
+                    md_lines.append(f"  - {error}\n")
+
+            full_content = "".join(md_lines)
 
             output_path = self.output_dir / filename
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(full_content)
-
-            logger.info(f"Saved LaTeX to {output_path}")
-
-            # Verify syntax
-            is_valid, errors = self.verifier.validate_latex_syntax(output_path)
-            if not is_valid:
-                logger.warning(f"LaTeX validation issues: {errors}")
-            else:
-                logger.info("LaTeX syntax validated successfully")
-
-            return output_path
-
-        except Exception as e:
-            raise ExtractionError(f"Failed to save LaTeX file: {e}") from e
-
-    def save_markdown(self, content: str, filename: str = "tables.md") -> Path:
-        """Save content as Markdown file.
-
-        Args:
-            content: Markdown content.
-            filename: Output filename.
-
-        Returns:
-            Path to saved file.
-
-        Raises:
-            ExtractionError: If save fails.
-        """
-        try:
-            output_path = self.output_dir / filename
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(content)
 
             logger.info(f"Saved Markdown to {output_path}")
             return output_path
@@ -101,14 +85,14 @@ class OutputAssembler:
             raise ExtractionError(f"Failed to save Markdown file: {e}") from e
 
     def save_image(self, image_path: Path, destination_filename: str) -> Path:
-        """Copy image to output directory.
+        """Copy image to figures directory.
 
         Args:
             image_path: Path to source image.
-            destination_filename: Filename in output directory.
+            destination_filename: Filename in figures directory.
 
         Returns:
-            Path to copied file.
+            Path to copied file (relative to output_dir).
 
         Raises:
             ExtractionError: If copy fails.
@@ -117,74 +101,22 @@ class OutputAssembler:
             if not image_path.exists():
                 raise ExtractionError(f"Source image not found: {image_path}")
 
-            output_path = self.output_dir / destination_filename
+            # Create figures directory if needed
+            if self.figures_dir is None:
+                self.figures_dir = self.output_dir / f"{self.timestamp}_{self.source_filename}"
+                ensure_directory(self.figures_dir)
+
+            output_path = self.figures_dir / destination_filename
             with open(image_path, "rb") as src:
                 with open(output_path, "wb") as dst:
                     dst.write(src.read())
 
             logger.debug(f"Saved image to {output_path}")
-            return output_path
+            # Return relative path for markdown linking
+            return Path(output_path.name).parent / output_path.name
 
         except Exception as e:
             raise ExtractionError(f"Failed to save image: {e}") from e
-
-    def save_metadata(self, filename: str = "metadata.txt") -> Optional[Path]:
-        """Save processing metadata.
-
-        Args:
-            filename: Output filename.
-
-        Returns:
-            Path to saved metadata file, or None if save fails.
-        """
-        try:
-            output_path = self.output_dir / filename
-            with open(output_path, "w") as f:
-                f.write("OCRSuite Processing Metadata\n")
-                f.write("=" * 40 + "\n\n")
-                f.write(f"Created: {self.metadata['created']}\n")
-                f.write(f"Pages processed: {self.metadata['pages_processed']}\n")
-                if self.metadata["errors"]:
-                    f.write(f"\nErrors ({len(self.metadata['errors'])}):\n")
-                    for error in self.metadata["errors"]:
-                        f.write(f"  - {error}\n")
-
-            logger.debug(f"Saved metadata to {output_path}")
-            return output_path
-
-        except Exception as e:
-            logger.warning(f"Failed to save metadata: {e}")
-            return None
-
-    @staticmethod
-    def _build_latex_preamble(title: Optional[str] = None, author: Optional[str] = None) -> str:
-        """Build LaTeX document preamble.
-
-        Args:
-            title: Document title.
-            author: Document author.
-
-        Returns:
-            LaTeX preamble string.
-        """
-        preamble = r"""
-\documentclass[12pt]{article}
-\usepackage[utf-8]{inputenc}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{graphicx}
-\usepackage[margin=1in]{geometry}
-"""
-
-        if title or author:
-            preamble += "\n"
-            if title:
-                preamble += f"\n\\title{{{title}}}\n"
-            if author:
-                preamble += f"\n\\author{{{author}}}\n"
-            preamble += "\n\\maketitle"
-
-        return preamble
 
     def record_error(self, error_msg: str) -> None:
         """Record processing error.
@@ -202,3 +134,19 @@ class OutputAssembler:
             count: Number of pages processed.
         """
         self.metadata["pages_processed"] += count
+
+    def get_output_filename(self) -> str:
+        """Get the output markdown filename.
+
+        Returns:
+            Filename in format DDMMYY_HHMMSS_sourcename.md
+        """
+        return f"{self.timestamp}_{self.source_filename}.md"
+
+    def get_figures_dirname(self) -> str:
+        """Get the figures directory name.
+
+        Returns:
+            Directory name in format DDMMYY_HHMMSS_sourcename/
+        """
+        return f"{self.timestamp}_{self.source_filename}"

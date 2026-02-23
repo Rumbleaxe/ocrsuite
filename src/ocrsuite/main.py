@@ -131,7 +131,7 @@ def process(
             console.print(f"[green]✓[/green] Converted {len(image_paths)} pages to images")
 
             # Initialize output
-            assembler = OutputAssembler(Path(output), debug=cfg.output.debug_mode)
+            assembler = OutputAssembler(Path(output), source_filename=input.stem, debug=cfg.output.debug_mode)
 
             # Process each image with Ollama
             task_ocr = progress.add_task(
@@ -151,12 +151,10 @@ def process(
                     elif classification["type"] == "table":
                         text = client.extract_table(image_path)
                     elif classification["type"] == "figure":
-                        # Save figure directly
-                        figure_num = (
-                            len([p for p in Path(output).glob("figure_*.png") if p.is_file()]) + 1
-                        )
-                        assembler.save_image(image_path, f"figure_{figure_num:03d}.png")
-                        text = f"[Figure {figure_num} - see figure_{figure_num:03d}.png]"
+                        # Save figure to figures directory
+                        figure_num = len([p for p in (assembler.figures_dir or Path("/dev/null")).glob("figure_*.png") if p.is_file()]) + 1
+                        rel_path = assembler.save_image(image_path, f"figure_{figure_num:03d}.png")
+                        text = f"![Figure {figure_num}]({assembler.get_figures_dirname()}/figure_{figure_num:03d}.png)"
                     else:
                         text = "[Unrecognized content]"
 
@@ -185,49 +183,34 @@ def process(
                 f"[green]✓[/green] Extracted content from {pages_processed} pages"
             )
 
-            # Assemble outputs
-            logger.info("Assembling output files...")
-            if cfg.output.format_latex:
-                latex_content = "\n\n".join(
-                    f"% {item['page']} ({item['type']})\n{item['content']}"
-                    for item in extracted_content
-                )
-                assembler.save_latex(
-                    latex_content,
-                    filename="document.tex",
-                    title=input.stem.replace("_", " ").title(),
-                )
-                logger.info("✓ LaTeX document saved: document.tex")
+            # Assemble single markdown output with linked figures
+            logger.info("Assembling markdown output with linked figures...")
+            md_content = "\n\n".join(
+                f"## {item['page']} ({item['type']})\n\n{item['content']}"
+                for item in extracted_content
+            )
+            
+            output_file = assembler.save_markdown(
+                md_content,
+                title=input.stem.replace("_", " ").title(),
+            )
+            logger.info(f"✓ Markdown document saved: {output_file.name}")
 
-            if cfg.output.format_markdown:
-                md_content = "\n\n".join(
-                    f"## {item['page']} ({item['type']})\n\n{item['content']}"
-                    for item in extracted_content
-                )
-                assembler.save_markdown(md_content, filename="extraction.md")
-                logger.info("✓ Markdown file saved: extraction.md")
-
-            metadata_file = assembler.save_metadata()
-            if metadata_file:
-                logger.info(f"✓ Metadata file saved: {metadata_file.name}")
+            # Cleanup temp images if not debug mode
+            if not cfg.output.debug_mode and temp_images_dir.exists():
+                import shutil
+                shutil.rmtree(temp_images_dir, ignore_errors=True)
 
             # Success summary
             logger.info(f"OCRSuite processing completed successfully!")
             console.print("\n[bold green]✓ Processing Complete![/bold green]\n")
             console.print(f"[bold]Output Directory:[/bold] {Path(output).resolve()}")
-            console.print("[bold]Files Generated:[/bold]")
-            console.print("  - document.tex (LaTeX)")
-            console.print("  - extraction.md (Markdown)")
-            console.print(
-                f"  - figure_*.png ({len(list(Path(output).glob('figure_*.png')))} figures)"
-            )
-            console.print("  - metadata.txt")
+            console.print("[bold]Output File:[/bold]")
+            console.print(f"  - {output_file.name}")
+            figures_found = len(list((assembler.figures_dir or Path("/dev/null")).glob("figure_*.png"))) if assembler.figures_dir else 0
+            if figures_found > 0:
+                console.print(f"  - {assembler.get_figures_dirname()}/ ({figures_found} figures)")
 
-            # Cleanup temp images if not debug mode
-            if not cfg.output.debug_mode and temp_images_dir.exists():
-                import shutil
-
-                shutil.rmtree(temp_images_dir, ignore_errors=True)
 
     except OCRSuiteError as e:
         logger.error(f"OCRSuite error: {e}", exc_info=verbose)
