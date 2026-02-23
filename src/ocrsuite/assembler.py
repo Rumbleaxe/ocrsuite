@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+from .latex_verifier import LaTeXVerifier
 from .utils import ExtractionError, ensure_directory
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,7 @@ class OutputAssembler:
         """
         self.output_dir = ensure_directory(output_dir)
         self.debug = debug
+        self.verifier = LaTeXVerifier()
         self.metadata: dict[str, Any] = {
             "created": datetime.now().isoformat(),
             "pages_processed": 0,
@@ -52,13 +54,23 @@ class OutputAssembler:
         try:
             # Build complete LaTeX document
             preamble = self._build_latex_preamble(title, author)
-            full_content = f"{preamble}\n\n\\begin{{document}}\n\n{content}\n\n\\end{{document}}\n"
+            full_content = (
+                f"{preamble}\n\n\\begin{{document}}\n\n{content}\n\n\\end{{document}}\n"
+            )
 
             output_path = self.output_dir / filename
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(full_content)
 
             logger.info(f"Saved LaTeX to {output_path}")
+
+            # Verify syntax
+            is_valid, errors = self.verifier.validate_latex_syntax(output_path)
+            if not is_valid:
+                logger.warning(f"LaTeX validation issues: {errors}")
+            else:
+                logger.info("LaTeX syntax validated successfully")
+
             return output_path
 
         except Exception as e:
