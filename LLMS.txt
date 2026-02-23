@@ -1,0 +1,83 @@
+# Agentic AI Integration for PDF Processing App: Automated Building, Testing, Debugging, and Maintenance
+
+This document outlines how agentic AI programming systems (e.g., GitHub Copilot, Anthropic's Claude, OpenCode Interpreter, or similar autonomous coding agents) should handle the lifecycle of the AI-Based PDF Processing App. Agentic AIs are treated as collaborative agents capable of reasoning, code generation, execution, and self-correction. The approach emphasizes modularity, safety, iteration, and alignment with the project's OSS standards (PEP compliance, clean architecture).
+
+## 1. Core Principles for Agentic AI Engagement
+- **Agentic Autonomy with Oversight**: AIs should operate in a loop of plan-execute-verify, but always propose changes for human review in production. Use sandboxes for experimentation.
+- **Systems-Oriented Workflow**: Think in feedback loops: Generate → Test → Debug → Maintain. Prioritize small, atomic commits.
+- **Tool Integration**: Leverage available tools like code interpreters (e.g., Python REPL), linters (Black, mypy), testers (pytest), and version control (Git).
+- **Safety and Ethics**: Avoid destructive actions (e.g., no `rm -rf`). Ensure OSS compliance; no proprietary code injection.
+- **Scalability**: Handle Windows-specific quirks (e.g., path separators, multiprocessing alternatives) while maintaining cross-platform compatibility.
+
+## 2. Automated Building
+Agentic AIs should automate setup and building to ensure reproducible environments.
+
+### 2.1 Process Steps
+1. **Environment Setup**:
+   - Clone the repo: `git clone <repo_url>`.
+   - Install dependencies: Use Poetry (`poetry install --with dev` for dev deps like pytest, black).
+   - Pull Ollama models: Scripted via `ollama pull llama3.2-vision` (handle errors with retries).
+   - Windows-Specific: Detect OS; install Windows deps (e.g., via winget for Git, Python) and configure CUDA for GPU if available.
+
+2. **Build Pipeline**:
+   - Generate build scripts (e.g., Makefile or GitHub Actions YAML).
+   - Compile/package: `poetry build` for wheel/sdist; create Docker image (`docker build -t pdf-processor .`).
+   - Verify: Run smoke tests (e.g., `poetry run python src/main.py --version`).
+
+### 2.2 AI Handling
+- **Copilot/Claude**: Suggest code completions for setup scripts; auto-generate Dockerfiles based on pyproject.toml.
+- **OpenCode**: Use interpretive mode to execute build commands in a REPL, logging outputs for verification.
+- **Error Resolution**: If build fails (e.g., missing dep), query logs, suggest fixes (e.g., add to pyproject.toml), and re-execute.
+
+## 3. Automated Testing
+Testing ensures reliability, especially for OCR accuracy on degraded PDFs.
+
+### 3.1 Process Steps
+1. **Unit Tests**: Cover modules (e.g., test_preprocessor.py: Mock PDF input, assert image output).
+2. **Integration Tests**: End-to-end pipeline on sample PDFs (e.g., from tests/resources/).
+3. **Coverage and Benchmarks**: Run `poetry run pytest --cov=src` (aim 80%+); benchmark OCR speed/accuracy on datasets like old books from Project Gutenberg.
+4. **Windows-Specific**: Use CI runners to test multiprocessing (switch to ThreadPoolExecutor on Windows).
+5. **Edge Cases**: Test degraded scans, large PDFs, math-heavy pages.
+
+### 3.2 AI Handling
+- **Copilot/Claude**: Generate test cases from docstrings (e.g., "Write pytest for ocr_engine.py handling math formulas").
+- **OpenCode**: Execute tests in REPL; parse failures, suggest assertions or mocks.
+- **Iteration Loop**: If coverage <80%, identify gaps and auto-generate tests; re-run until passing.
+
+## 4. Automated Debugging
+Debugging focuses on root-cause analysis with minimal disruption.
+
+### 4.1 Process Steps
+1. **Detection**: Monitor logs/errors during builds/tests (e.g., Ollama inference failures).
+2. **Isolation**: Use bisect (git bisect) for regressions; profile with cProfile for perf issues.
+3. **Fix Application**: Patch code, commit with descriptive messages (e.g., "Fix: Handle Windows path in preprocessor").
+4. **Verification**: Re-test fixed components; update docs if needed.
+5. **Common Issues**: Handle Ollama GPU errors (fallback to CPU), PDF parsing failures (add retries), hallucination in LLMs (refine prompts).
+
+### 4.2 AI Handling
+- **Copilot/Claude**: Analyze stack traces; suggest fixes (e.g., "Wrap in try-except for FileNotFoundError").
+- **OpenCode**: Step-through code in REPL (e.g., set breakpoints via pdb); reproduce bugs, test hypotheses.
+- **Self-Correction Loop**: Propose fix → Execute in sandbox → If fails, iterate with new hypothesis.
+
+## 5. Automated Maintenance
+Maintenance ensures long-term viability, including updates and refactoring.
+
+### 5.1 Process Steps
+1. **Dependency Updates**: Scan with `poetry show --outdated`; test upgrades (e.g., new Ollama models).
+2. **Refactoring**: Apply linters (`poetry run black .`); refactor for modularity (e.g., extract services).
+3. **Documentation Sync**: Auto-update README/docs from code changes using Sphinx.
+4. **Monitoring**: Set up alerts for breaking changes (e.g., via GitHub Dependabot).
+5. **Windows-Specific**: Regularly test on Windows VMs; handle env vars (e.g., PATH for Tesseract).
+
+### 5.2 AI Handling
+- **Copilot/Claude**: Suggest refactors (e.g., "Convert to async for better perf"); generate PR descriptions.
+- **OpenCode**: Query deps, execute updates in isolated envs; rollback if tests fail.
+- **Feedback Loop**: Monthly reviews: Analyze git logs, suggest improvements (e.g., "Add CI for Windows").
+
+## 6. Integration Workflow for Agentic AIs
+- **Entry Point**: Trigger via hooks (e.g., pre-commit for linting, post-merge for tests).
+- **Collaboration**: Output proposals as diffs/comments; await approval.
+- **Metrics**: Track success (e.g., build time, test pass rate) to refine AI prompts.
+- **Best Practices**: Align with OSS norms (e.g., semantic versioning, CONTRIBUTING.md).
+
+This framework turns agentic AIs into reliable co-maintainers, fostering iterative improvement while preserving human oversight.

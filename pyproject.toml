@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ocrsuite"
+version = "0.1.0"
+description = "AI-powered PDF processing for digitizing old books using Ollama vision models"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "OCRSuite Contributors"}
+]
+keywords = ["pdf", "ocr", "ollama", "ai", "document-processing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+
+dependencies = [
+    "pdfplumber>=0.10.0",      # Lightweight PDF parsing
+    "Pillow>=10.0.0",          # Image processing
+    "requests>=2.31.0",        # Ollama API calls
+    "pyyaml>=6.0",             # Configuration files
+    "typer>=0.9.0",            # CLI framework
+    "rich>=13.0.0",            # Terminal UI enhancements
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",             # All-in-one: linter, formatter, type-checker
+    "mypy>=1.5.0",
+]
+
+[project.scripts]
+ocrsuite = "ocrsuite.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ocrsuite"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers -v"
+markers = [
+    "integration: marks tests as integration (deselect with '-m \"not integration\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".eggs",
+    "*.egg",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "C",      # flake8-comprehensions
+    "B",      # flake8-bugbear
+]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+profile = "black"
+line-length = 100
+
+[tool.ruff.format]
+line-length = 100
+quote-style = "double"
