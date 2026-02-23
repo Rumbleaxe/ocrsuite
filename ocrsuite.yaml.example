@@ -1,0 +1,54 @@
+# OCRSuite Configuration Example
+
+# PDF Processing Settings
+pdf:
+  # Resolution (DPI) for converting PDF pages to images
+  # Higher DPI = better quality but slower processing
+  dpi: 300
+  
+  # Maximum pages to process (None = all pages)
+  max_pages: null
+
+# Ollama Model Configuration
+ollama:
+  # Ollama server URL (must be running locally)
+  url: "http://localhost:11434"
+  
+  # Vision model to use for OCR
+  # Options: llama2-vision, deepseek-coder-v2, granite-vision, etc.
+  model: "llama2-vision"
+  
+  # Request timeout in seconds
+  timeout: 120
+  
+  # Maximum retry attempts for failed requests
+  max_retries: 3
+
+# OCR and Content Extraction Settings
+ocr:
+  # Confidence threshold for content classification (0-1)
+  # Lower = more permissive, higher = more strict
+  confidence_threshold: 0.5
+  
+  # Extract mathematical formulas to LaTeX
+  extract_math: true
+  
+  # Extract tables to Markdown
+  extract_tables: true
+  
+  # Extract figures as PNG images
+  extract_figures: true
+
+# Output Format Settings
+output:
+  # Generate LaTeX document (.tex)
+  format_latex: true
+  
+  # Generate Markdown document (.md)
+  format_markdown: true
+  
+  # Extract and save individual images
+  extract_images: true
+  
+  # Save intermediate processing data for debugging
+  debug_mode: false
