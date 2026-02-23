@@ -1,5 +1,6 @@
 """Main CLI entry point for OCRSuite."""
 
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -68,7 +69,11 @@ def process(
     3. Extract and convert content to LaTeX, PNG, and Markdown formats
     4. Save results to the output directory
     """
-    setup_logging(verbose)
+    output_path = Path(output)
+    log_file = setup_logging(output_path, verbose)
+    logger = logging.getLogger("ocrsuite")
+    logger.info(f"Processing PDF: {input}")
+    logger.info(f"Output directory: {output_path}")
 
     try:
         with Progress(console=console) as progress:
@@ -76,22 +81,29 @@ def process(
             task_config = progress.add_task("[cyan]Loading configuration...", total=None)
             if config:
                 cfg = Config.from_file(config)
+                logger.info(f"Configuration loaded from: {config}")
             else:
                 cfg = Config()
+                logger.info("Using default configuration")
 
             if model:
                 cfg.ollama.model = model
+                logger.info(f"Model override: {model}")
             if max_pages:
                 cfg.pdf.max_pages = max_pages
+                logger.info(f"Max pages limit: {max_pages}")
 
             progress.update(task_config, completed=True)
+            logger.info(f"Configuration ready: model={cfg.ollama.model}, dpi={cfg.pdf.dpi}, timeout={cfg.ollama.timeout}s")
             console.print(f"[green]✓[/green] Configuration loaded (model: {cfg.ollama.model})")
 
             # Check Ollama health
             task_ollama = progress.add_task("[cyan]Checking Ollama connection...", total=None)
             client = OllamaClient(cfg.ollama)
+            logger.info(f"Connecting to Ollama at {cfg.ollama.url}...")
             if not client.health_check():
                 progress.update(task_ollama, visible=False)
+                logger.error(f"Cannot connect to Ollama at {cfg.ollama.url}")
                 console.print(
                     "[red]✗ Ollama not running![/red]\n"
                     "Start it with: [bold]ollama serve[/bold]\n"
@@ -100,12 +112,15 @@ def process(
                 raise OCRSuiteError(f"Could not connect to Ollama at {cfg.ollama.url}")
 
             progress.update(task_ollama, completed=True)
+            logger.info(f"✓ Connected to Ollama at {cfg.ollama.url}")
             console.print(f"[green]✓[/green] Connected to Ollama at {cfg.ollama.url}")
 
             # Preprocess PDF
             task_preprocess = progress.add_task("[cyan]Converting PDF to images...", total=None)
             preprocessor = PDFPreprocessor(dpi=cfg.pdf.dpi)
+            logger.info(f"Reading PDF: {input}")
             pdf_info = preprocessor.get_pdf_info(input)
+            logger.info(f"PDF info: {pdf_info['page_count']} pages")
             console.print(f"[bold]PDF Info:[/bold] {pdf_info['page_count']} pages")
 
             temp_images_dir = Path(output) / ".temp_images"
@@ -157,16 +172,21 @@ def process(
 
                 except Exception as e:
                     console.print(f"[yellow]⚠ Error processing {image_path.name}: {e}[/yellow]")
+                    logger.error(f"Error processing {image_path.name}: {e}", exc_info=verbose)
                     assembler.record_error(f"{image_path.name}: {e}")
 
                 finally:
                     progress.update(task_ocr, advance=1)
 
+            pages_processed = assembler.metadata['pages_processed']
+            errors_count = len(assembler.metadata['errors'])
+            logger.info(f"✓ Extraction complete: {pages_processed} pages processed, {errors_count} errors")
             console.print(
-                f"[green]✓[/green] Extracted content from {assembler.metadata['pages_processed']} pages"
+                f"[green]✓[/green] Extracted content from {pages_processed} pages"
             )
 
             # Assemble outputs
+            logger.info("Assembling output files...")
             if cfg.output.format_latex:
                 latex_content = "\n\n".join(
                     f"% {item['page']} ({item['type']})\n{item['content']}"
@@ -177,6 +197,7 @@ def process(
                     filename="document.tex",
                     title=input.stem.replace("_", " ").title(),
                 )
+                logger.info("✓ LaTeX document saved: document.tex")
 
             if cfg.output.format_markdown:
                 md_content = "\n\n".join(
@@ -184,10 +205,14 @@ def process(
                     for item in extracted_content
                 )
                 assembler.save_markdown(md_content, filename="extraction.md")
+                logger.info("✓ Markdown file saved: extraction.md")
 
-            assembler.save_metadata()
+            metadata_file = assembler.save_metadata()
+            if metadata_file:
+                logger.info(f"✓ Metadata file saved: {metadata_file.name}")
 
             # Success summary
+            logger.info(f"OCRSuite processing completed successfully!")
             console.print("\n[bold green]✓ Processing Complete![/bold green]\n")
             console.print(f"[bold]Output Directory:[/bold] {Path(output).resolve()}")
             console.print("[bold]Files Generated:[/bold]")
@@ -205,13 +230,17 @@ def process(
                 shutil.rmtree(temp_images_dir, ignore_errors=True)
 
     except OCRSuiteError as e:
+        logger.error(f"OCRSuite error: {e}", exc_info=verbose)
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(code=1) from e
     except Exception as e:
+        logger.critical(f"Unexpected error: {e}", exc_info=True)
         console.print(f"[red]Unexpected error:[/red] {e}")
         if verbose:
             console.print_exception()
         raise typer.Exit(code=1) from e
+    finally:
+        logger.info(f"OCRSuite process finished. Log file: {log_file}")
 
 
 @app.command()
