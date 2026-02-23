@@ -15,8 +15,9 @@ ollama:
   url: "http://localhost:11434"
   
   # Vision model to use for OCR
-  # Options: llama2-vision, deepseek-coder-v2, granite-vision, etc.
-  model: "llama2-vision"
+  # Available locally: llama3.2, llava:13b, granite3.2-vision-abliterated, glm-4.7-flash
+  # Or try any model: llama2-uncensored, phi3, etc.
+  model: "llama3.2"
   
   # Request timeout in seconds
   timeout: 120

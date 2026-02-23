@@ -46,7 +46,7 @@ def process(
     model: Optional[str] = typer.Option(
         None,
         "--model",
-        help="Ollama model to use (e.g., llama2-vision).",
+        help="Ollama model to use. Check available with: ollama list",
     ),
     max_pages: Optional[int] = typer.Option(
         None,

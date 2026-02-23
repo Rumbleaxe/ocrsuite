@@ -23,7 +23,7 @@ class OllamaConfig:
     """Ollama integration configuration."""
 
     url: str = "http://localhost:11434"
-    model: str = "llama2-vision"
+    model: str = "llama3.2"  # Lightweight vision model, widely available
     timeout: int = 120
     max_retries: int = 3
 

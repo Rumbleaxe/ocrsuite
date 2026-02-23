@@ -32,14 +32,18 @@ Serving on 127.0.0.1:11434
 ### 3. Pull a Vision Model (in a new terminal)
 
 ```powershell
-# Option 1: Faster, smaller model
-ollama pull llama2-vision
+# Check what you have installed
+ollama list
 
-# Option 2: More accurate but larger
-ollama pull deepseek-coder-v2
+# Use what's available, or pull a new one:
+# Option 1: Fast, lightweight (recommended)
+ollama pull llama3.2
 
-# Option 3: Lightweight
-ollama pull granite-vision
+# Option 2: Better for documents
+ollama pull llava:13b
+
+# Option 3: Vision-optimized
+ollama pull granite3.2-vision-abliterated
 ```
 
 ### 4. Install OCRSuite
@@ -66,7 +70,17 @@ uv pip install -e .
 ### Basic Processing
 
 ```powershell
+# Check available models first
+ollama list
+
+# Process with default model (llama3.2)
 ocrsuite process --input mybook.pdf --output ./output/
+
+# Process with a specific model
+ocrsuite process --input mybook.pdf --model llava:13b --output ./output/
+
+# Process with granite vision model
+ocrsuite process --input mybook.pdf --model granite3.2-vision-abliterated --output ./output/
 ```
 
 ### With Configuration File
@@ -85,19 +99,19 @@ ocrsuite process --input mybook.pdf --config ocrsuite.yaml --output ./output/
 ocrsuite process \
   --input book.pdf \
   --output ./results \
-  --model llama2-vision \
+  --model llava:13b \
   --max-pages 10 \
   --verbose
 ```
 
-**Options:**
+**Common Options:**
 - `--input PATH` - PDF file to process (required)
 - `--output PATH` - Output directory (default: `./output`)
-- `--model MODEL` - Ollama model name (default: `llama2-vision`)
-- `--config PATH` - YAML config file
+- `--model MODEL` - **Ollama model to use (run `ollama list` first)**
 - `--max-pages N` - Process only first N pages
-- `--verbose` - Show detailed logs
-- `--help` - Show all options
+- `--config PATH` - YAML config file (optional)
+- `--verbose/-v` - Enable detailed logging
+- `--help` - Show all available options
 
 ## Output
 
@@ -206,15 +220,36 @@ pytest --cov=src
 - **Discussions**: Start a discussion for questions
 - **Documentation**: Check README.md and SPECIFICATION.md
 
-## Common Model Recommendations
+## Available Models Guide
 
-| Model | Best For | Speed | Memory | Accuracy |
-|-------|----------|-------|--------|----------|
-| **llama2-vision** | General OCR | Medium | 8-16GB | Good |
-| **deepseek-coder-v2** | Math/code/complex | Slow | 16GB+ | Excellent |
-| **granite-vision** | Fast processing | Fast | 4-8GB | Fair |
+Check your local models:
 
-Try `llama2-vision` first—it's a good balance.
+```powershell
+ollama list
+```
+
+**Popular Vision Models:**
+
+| Model | Best For | Size | Speed |
+|-------|----------|------|-------|
+| `llama3.2` | Lightweight, balanced | 2.0 GB | ⚡ Fast |
+| `llava:13b` | Documents, charts | 8.0 GB | Medium |
+| `granite3.2-vision-abliterated` | Vision tasks | 2.4 GB | ⚡ Fast |
+| `glm-4.7-flash` | Fast inference | 19 GB | Medium |
+| `bakllava` | Balanced | 4.7 GB | Medium |
+
+**Start with `llama3.2`** (recommended):
+
+```powershell
+ocrsuite process --input book.pdf --model llama3.2 --output ./output/
+```
+
+Or try others:
+
+```powershell
+ocrsuite process --input book.pdf --model llava:13b --output ./output/
+ocrsuite process --input book.pdf --model granite3.2-vision-abliterated --output ./output/
+```
 
 ---
 
