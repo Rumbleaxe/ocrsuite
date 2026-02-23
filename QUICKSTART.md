@@ -73,7 +73,7 @@ uv pip install -e .
 # Check available models first
 ollama list
 
-# Process with default model (llama3.2)
+# Process with default model (deepseek-ocr)
 ocrsuite process --input mybook.pdf --output ./output/
 
 # Process with a specific model
@@ -232,16 +232,17 @@ ollama list
 
 | Model | Best For | Size | Speed |
 |-------|----------|------|-------|
-| `llama3.2` | Lightweight, balanced | 2.0 GB | ⚡ Fast |
+| `deepseek-ocr` | OCR, document extraction | 6.7 GB | ⚡ Fast |
 | `llava:13b` | Documents, charts | 8.0 GB | Medium |
 | `granite3.2-vision-abliterated` | Vision tasks | 2.4 GB | ⚡ Fast |
+| `llama3.2` | Lightweight, balanced | 2.0 GB | ⚡ Fast |
 | `glm-4.7-flash` | Fast inference | 19 GB | Medium |
 | `bakllava` | Balanced | 4.7 GB | Medium |
 
-**Start with `llama3.2`** (recommended):
+**Start with `deepseek-ocr`** (recommended for OCR tasks):
 
 ```powershell
-ocrsuite process --input book.pdf --model llama3.2 --output ./output/
+ocrsuite process --input book.pdf --model deepseek-ocr --output ./output/
 ```
 
 Or try others:
