@@ -13,7 +13,7 @@ def test_config_defaults():
     config = Config()
     assert config.pdf.dpi == 300
     assert config.ollama.url == "http://localhost:11434"
-    assert config.ollama.model == "deepseek-ocr"
+    assert config.ollama.model == "ocrsuite-deepseek"
     assert config.ocr.confidence_threshold == 0.5
 
 

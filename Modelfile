@@ -1,0 +1,21 @@
+FROM deepseek-ocr:latest
+
+# OCR-optimized parameters for document processing
+# Based on DeepSeek-OCR Local Guide and official recommendations
+
+# Deterministic text extraction (critical for OCR accuracy)
+PARAMETER temperature 0.0
+
+# Maximum context window for long documents and complex layouts
+PARAMETER num_ctx 8192
+
+# Prevent hallucinations and repetitive text
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.1
+
+# Timeout handling - allows longer inference for large/complex documents
+PARAMETER num_predict 4096
+
+# System prompt for OCR-specialized behavior
+SYSTEM You are an expert OCR assistant. Extract text accurately, preserve layouts and structure, and handle multilingual content. Focus on accuracy over speed.

@@ -29,22 +29,20 @@ You should see:
 Serving on 127.0.0.1:11434
 ```
 
-### 3. Pull a Vision Model (in a new terminal)
+### 3. Pull DeepSeek-OCR Model (in a new terminal)
 
 ```powershell
 # Check what you have installed
 ollama list
 
-# Use what's available, or pull a new one:
-# Option 1: Fast, lightweight (recommended)
-ollama pull llama3.2
+# Pull DeepSeek-OCR (recommended for OCRSuite)
+ollama pull deepseek-ocr
 
-# Option 2: Better for documents
-ollama pull llava:13b
-
-# Option 3: Vision-optimized
-ollama pull granite3.2-vision-abliterated
+# Verify it's installed
+ollama list | findstr deepseek-ocr
 ```
+
+**Note:** OCRSuite automatically builds an optimized `ocrsuite-deepseek` model from the Modelfile on first run.
 
 ### 4. Install OCRSuite
 
@@ -230,27 +228,32 @@ ollama list
 
 **Popular Vision Models:**
 
-| Model | Best For | Size | Speed |
-|-------|----------|------|-------|
-| `deepseek-ocr` | OCR, document extraction | 6.7 GB | ⚡ Fast |
-| `llava:13b` | Documents, charts | 8.0 GB | Medium |
-| `granite3.2-vision-abliterated` | Vision tasks | 2.4 GB | ⚡ Fast |
-| `llama3.2` | Lightweight, balanced | 2.0 GB | ⚡ Fast |
-| `glm-4.7-flash` | Fast inference | 19 GB | Medium |
-| `bakllava` | Balanced | 4.7 GB | Medium |
+| Model | Best For | Size | Speed | Notes |
+|-------|----------|------|-------|-------|
+| `ocrsuite-deepseek` | OCR (recommended) | 6.7 GB | Medium | ⭐ Optimized with Modelfile |
+| `deepseek-ocr` | OCR, document extraction | 6.7 GB | Medium | Base model (use optimized version) |
+| `llava:13b` | Documents, charts | 8.0 GB | Medium | Alternative option |
+| `granite3.2-vision-abliterated` | Vision tasks | 2.4 GB | ⚡ Fast | Good for quick processing |
+| `llama3.2` | Lightweight, balanced | 2.0 GB | ⚡ Fast | Fast fallback option |
+| `glm-4.7-flash` | Fast inference | 19 GB | Medium | Resource-intensive |
+| `bakllava` | Balanced | 4.7 GB | Medium | General purpose |
 
-**Start with `deepseek-ocr`** (recommended for OCR tasks):
+**Default Usage (uses ocrsuite-deepseek):**
 
 ```powershell
-ocrsuite process --input book.pdf --model deepseek-ocr --output ./output/
+ocrsuite process --input book.pdf --output ./output/
 ```
 
-Or try others:
+**Or specify a different model:**
 
 ```powershell
 ocrsuite process --input book.pdf --model llava:13b --output ./output/
 ocrsuite process --input book.pdf --model granite3.2-vision-abliterated --output ./output/
 ```
+
+**For configuration details, see:**
+- [MODELFILE.md](docs/MODELFILE.md) - Modelfile parameters and tuning
+- [DeepSeekOCR_Local_Guide.md](DeepSeekOCR_Local_Guide.md) - Local Ollama setup guide
 
 ---
 

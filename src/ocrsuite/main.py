@@ -46,7 +46,7 @@ def process(
     model: Optional[str] = typer.Option(
         None,
         "--model",
-        help="Ollama model to use. Check available with: ollama list",
+        help="Ollama model to use (default: ocrsuite-deepseek). Check available with: ollama list. For custom models, see docs/MODELFILE.md",
     ),
     max_pages: Optional[int] = typer.Option(
         None,
