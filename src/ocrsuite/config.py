@@ -24,7 +24,7 @@ class OllamaConfig:
 
     url: str = "http://localhost:11434"
     model: str = "ocrsuite-deepseek"  # Optimized DeepSeek-OCR with OCR parameters
-    timeout: int = 300  # Increased for complex documents (5 minutes)
+    timeout: int = 600  # Increased to 10 minutes for complex documents
     max_retries: int = 3
 
 

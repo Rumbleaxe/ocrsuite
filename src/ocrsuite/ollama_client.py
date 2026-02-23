@@ -80,21 +80,30 @@ class OllamaClient:
             OllamaError: If classification fails.
         """
         prompt = (
-            "Classify the primary content in this image. "
-            "Respond with ONLY one of these categories:\n"
-            "- text: Contains mainly readable text\n"
-            "- table: Contains a data table or matrix\n"
-            "- figure: Contains a diagram, chart, or illustration\n"
-            "- mixed: Contains multiple types of content\n"
-            "- unknown: Cannot determine content type\n\n"
-            "Respond with the category name only."
+            "Look at this image and answer: What is the main content type? "
+            "Is it mostly text, a table, a figure/diagram, mixed content, or unrecognizable? "
+            "Answer with just one word: text, table, figure, mixed, or unknown."
         )
 
         response = self._call_vision_model(image_path, prompt).strip().lower()
 
-        # Map response to valid category
+        # Extract first valid word from response to handle explanatory text
         valid_types = {"text", "table", "figure", "mixed", "unknown"}
-        content_type = response if response in valid_types else "unknown"
+        content_type = "unknown"
+        
+        # Try exact match first
+        if response in valid_types:
+            content_type = response
+        # Try to find keyword in response
+        else:
+            for word in response.split():
+                word = word.strip('.,!?;:\'"').lower()
+                if word in valid_types:
+                    content_type = word
+                    logger.debug(f"Extracted '{word}' from response: '{response}'")
+                    break
+            if content_type == "unknown":
+                logger.debug(f"Could not classify, defaulting to unknown. Response was: '{response}'")
 
         return {"type": content_type, "confidence": 0.8}
 

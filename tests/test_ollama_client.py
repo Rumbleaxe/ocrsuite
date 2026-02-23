@@ -10,7 +10,7 @@ def test_ollama_client_init():
     client = OllamaClient(config)
     assert client.url == "http://localhost:11434"
     assert client.model == "llama2-vision"
-    assert client.timeout == 300
+    assert client.timeout == 600
 
 
 def test_ollama_client_url_trailing_slash():
