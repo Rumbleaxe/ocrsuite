@@ -311,8 +311,11 @@ def index():
                 value=models[0] if models else "ocrsuite-deepseek",
             ).classes("w-56").props("outlined dense bg-color=dark")
 
-            dpi = ui.slider(min=72, max=600, value=300, step=25).props("label label-always switch-label-side dense")
-            ui.label("DPI").classes(f"text-xs text-[{MUTED}] mb-3")
+            dpi = ui.select(
+                label="DPI",
+                options={150: 150, 300: 300, 600: 600, 1200: 1200},
+                value=300,
+            ).classes("w-28").props("outlined dense bg-color=dark")
 
             mpages = ui.select(
                 label="Max Pages",
@@ -405,7 +408,7 @@ def index():
         ollama_prog = ui.linear_progress(0).props("rounded color=cyan-6").classes("w-full mt-3")
         ollama_lbl = ui.label("").classes(f"text-xs text-[{MUTED}] mt-1")
 
-        log_btn = ui.button("View Log", on_click=lambda: ui.open("/log"))
+        log_btn = ui.button("View Log", on_click=lambda: ui.run_javascript('window.open("/log")'))
         log_btn.props("flat size=sm color=grey-6").classes("hidden mt-2")
 
     # ═══════════════════════════════════════════════════════
@@ -503,7 +506,7 @@ def index():
                         fpath = str(session_dir / f["name"]) if session_dir else ""
                         with ui.row().classes("file-row w-full"):
                             ui.label(f'{f["name"]}  ({f["size_kb"]} KB)').classes(f"text-sm text-[{TEXT}]")
-                            dl = ui.button("Download", on_click=lambda _, p=fpath: ui.download(p))
+                            dl = ui.button("Download", on_click=lambda p=fpath: ui.download(p))
                             dl.props("flat size=sm color=blue-6 dense")
 
     ui.timer(0.3, poll)
