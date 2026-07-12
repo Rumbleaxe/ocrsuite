@@ -1,298 +1,212 @@
 # OCRSuite
 
-**AI-powered PDF processing for digitizing old books** using Ollama vision models and open-source tools.
+**Local document digitization pipeline.** Vision LLMs via Ollama. No cloud. No API keys.
 
-OCRSuite extracts text, math formulas, tables, and figures from PDF scans of historical documents, outputting:
-- **LaTeX (.tex)** – Text and mathematical formulas in LaTeX format
-- **PNG files** – Extracted figures and diagrams
-- **Markdown (.md)** – Tables in Markdown format
+OCRSuite extracts text, math formulas, tables, and figures from PDF scans. Post-processing enriches the output with tables, links, and ASCII art via a secondary vision model.
+
+Output: Markdown, LaTeX, PNG figures.
 
 ## Key Features
 
-- **Fully Local** — No cloud dependencies. All processing runs on your machine via Ollama.
-- **AI-Powered** — Leverages vision models (DeepSeek-OCR, Llama 3.2 Vision) for accurate OCR on degraded text.
-- **Math & Layout Aware** — Handles complex layouts, mathematical notation, and illustrations from old books.
-- **Minimal Dependencies** — Designed for Windows with only essential libraries.
-- **Modular Pipeline** — Each stage (PDF → images → OCR → extraction) is independently testable.
+- **Fully local** — No network beyond localhost. All processing on your machine.
+- **DeepSeek-OCR** — Token-efficient OCR via custom Modelfile. 97% precision at <10x compression ratio.
+- **Dual interface** — CLI (`ocrsuite process`) and desktop GUI (`ocrsuite-gui`).
+- **Modular pipeline** — Preprocess → OCR → Assemble → (optional) Post-process.
+- **Post-processing** — Canny edge detection + Llava for figure-to-ASCII art. Tables, links, and lists detected and rendered as valid Markdown.
+- **ISO 8601 logging** — Structured logs via loguru with rotation and retention.
+- **Test coverage** — 41 tests, 57% coverage (excluding GUI).
 
 ## Requirements
 
-- **Python 3.12+**
-- **Ollama** ([ollama.ai](https://ollama.ai)) – Running locally with at least one vision model
-- **Windows 10/11** (or Linux/macOS with minor adjustments)
+- Python 3.12+
+- [Ollama](https://ollama.ai) running locally
+- DeepSeek-OCR model pulled. Llava optional for post-processing.
 
-## Quick Start
-
-### 1. Install Ollama
-
-Download from [ollama.ai](https://ollama.ai) and run:
+## Installation
 
 ```powershell
-ollama serve
-```
-
-In a new terminal, pull a vision model:
-
-```powershell
-ollama pull llama2-vision
-# or
-ollama pull deepseek-coder-v2
-```
-
-### 2. Install OCRSuite
-
-```powershell
-# Clone the repository
 git clone https://github.com/Rumbleaxe/OCRSuite.git
 cd ocrsuite
 
-# Install with uv (recommended) or pip
+# Install with uv (recommended)
 uv sync
-# or: pip install -e ".[dev]"
+
+# Pull the OCR model and build the optimized variant
+ollama pull deepseek-ocr
 ```
 
-### 3. Process a PDF
+OCRSuite auto-builds `ocrsuite-deepseek` from the Modelfile on first use.
+
+## CLI Usage
 
 ```powershell
+# Basic processing
 ocrsuite process --input book.pdf --output ./output/
+
+# With custom model, DPI, and verbose logging
+ocrsuite process --input book.pdf --model llava:13b --dpi 400 --verbose
+
+# With post-processing (tables, links, ASCII art from figures)
+ocrsuite process --input book.pdf --output ./output/ --postprocess --postprocess-model llava:13b
+
+# Process only first 10 pages with debug mode
+ocrsuite process --input book.pdf --max-pages 10 --verbose
 ```
 
-This will:
-1. Convert PDF pages to high-resolution images
-2. Send to Ollama for OCR and content classification
-3. Extract text/math to LaTeX, figures to PNG, tables to Markdown
-4. Save all outputs to `./output/`
+### Full options
 
-## Usage
+```
+ocrsuite process
+  --input PATH          PDF file (required)
+  --output PATH         Output directory (default: ./output)
+  --model MODEL         Ollama model (default: ocrsuite-deepseek)
+  --max-pages N         Process first N pages only
+  --config PATH         YAML config file
+  --verbose / -v        Debug-level logging
+  --postprocess         Enable vision model post-processing
+  --postprocess-model M Vision model for enrichment (default: llava:13b)
+```
 
-### Command-Line Interface
+## GUI
+
+Launch the desktop and web interface:
 
 ```powershell
-# Full options
-ocrsuite process \
-  --input input.pdf \
-  --output ./output \
-  --model llama2-vision \
-  --config config.yaml \
-  --verbose
-
-# With configuration file
-ocrsuite process --input book.pdf --config ocrsuite.yaml
+ocrsuite-gui              # Browser at http://localhost:8080
+ocrsuite-gui --native     # Desktop window
 ```
 
-### Configuration File (YAML)
+Features:
+- Drag-and-drop or click-to-upload PDF
+- Live progress: phase indicators, page-by-page OCR timer, bottleneck finder
+- Ollama health check with status badge
+- Configurable model, DPI, max pages, debug mode
+- Post-processing toggle with vision model selector (Advanced section)
+- Download output files directly from the UI
+- "View Log" button during processing
 
-Create `ocrsuite.yaml`:
+## Architecture
+
+```
+PDF Input
+  ↓
+[Preprocessor]     pdfplumber → high-res PNG images
+  ↓
+[OllamaClient]     DeepSeek-OCR via Ollama API (retry logic, health checks)
+  ↓
+[Assembler]        Markdown + LaTeX + PNG figures
+  ↓
+[PostProcessor]*   Canny edge detect → Llava vision → ASCII art + Markdown enrichment
+  ↓
+Output Directory   extraction.md, postprocessed.md, figures/*.png
+```
+
+\* Optional. Enabled via `--postprocess` flag or GUI toggle.
+
+## Core Modules
+
+| Module | Role |
+|---|---|
+| `preprocessor.py` | PDF → images (pdfplumber + Pillow) |
+| `ollama_client.py` | Ollama API: OCR, classification, text generation |
+| `assembler.py` | Output generation: Markdown, LaTeX, figures |
+| `postprocessor.py` | Llava enrichment: Canny edges → ASCII art, Markdown formatting |
+| `config.py` | YAML config loading, typed dataclasses |
+| `main.py` | CLI entry point (Typer + Rich progress) |
+| `gui.py` | Desktop/web UI (NiceGUI, async pipeline) |
+| `utils.py` | Loguru configuration, error classes |
+
+## Configuration
 
 ```yaml
 pdf:
-  dpi: 300  # Resolution for image conversion
-  
+  dpi: 300
+  max_pages: null
+
 ollama:
   url: "http://localhost:11434"
-  model: "llama2-vision"
-  timeout: 120
-  
+  model: "ocrsuite-deepseek"
+  timeout: 600
+  max_retries: 3
+
 ocr:
   confidence_threshold: 0.5
   extract_math: true
   extract_tables: true
   extract_figures: true
-  
+
 output:
   format_latex: true
   format_markdown: true
   extract_images: true
   debug_mode: false
-```
 
-## Architecture
-
-OCRSuite follows a modular pipeline:
-
-```
-PDF Input
-  ↓
-[Preprocessor] → Convert to high-res images
-  ↓
-[Ollama OCR] → Extract text, identify math/tables/figures
-  ↓
-[Extractors] → Parse into specialized formats
-  ↓
-[Assembler] → Write LaTeX, PNG, Markdown files
-  ↓
-Output Directory
-```
-
-### Core Modules
-
-- **`preprocessor.py`** – PDF → images (pdfplumber + Pillow)
-- **`ollama_client.py`** – Ollama API wrapper with retry logic
-- **`extractor.py`** – Parse Ollama responses into structured data
-- **`assembler.py`** – Write LaTeX, PNG, Markdown outputs
-- **`config.py`** – Load and validate configuration
-- **`main.py`** – CLI entry point (Typer)
-
-## Development
-
-### Setup Development Environment
-
-```powershell
-# Install with dev dependencies
-uv sync --all-extras
-
-# Or with pip
-pip install -e ".[dev]"
-```
-
-### Run Tests
-
-```powershell
-# All tests
-pytest
-
-# With coverage
-pytest --cov=src --cov-report=html
-
-# Specific test
-pytest tests/test_preprocessor.py::test_pdf_to_images
-```
-
-### Code Quality
-
-```powershell
-# Format code
-ruff format src tests
-
-# Lint
-ruff check src tests --fix
-
-# Type checking
-mypy src
-
-# All at once
-ruff format . && ruff check . --fix && mypy src
-```
-
-## Project Structure
-
-```
-ocrsuite/
-├── src/ocrsuite/
-│   ├── __init__.py
-│   ├── main.py              # CLI entry point
-│   ├── config.py            # Config loading/validation
-│   ├── preprocessor.py      # PDF → images
-│   ├── ollama_client.py     # Ollama API integration
-│   ├── extractor.py         # Parse OCR results
-│   ├── assembler.py         # Output generation
-│   └── utils.py             # Logging, error handling
-├── tests/
-│   ├── __init__.py
-│   ├── test_preprocessor.py
-│   ├── test_ollama_client.py
-│   └── resources/           # Sample PDFs for testing
-├── .github/
-│   ├── copilot-instructions.md
-│   └── workflows/           # CI/CD workflows
-├── docs/
-├── pyproject.toml           # Project metadata and dependencies
-├── LICENSE                  # MIT License
-├── README.md                # This file
-├── SPECIFICATION.md         # Architecture and design docs
-└── LLMS.txt                 # Agentic AI integration guidelines
+postprocess:
+  enabled: false
+  model: "llava:13b"
+  ascii_width: 80
+  canny_low: 50
+  canny_high: 150
 ```
 
 ## Technologies
 
-| Component | Tool | Why |
-|-----------|------|-----|
-| PDF Processing | `pdfplumber` | Lightweight, pure Python, Windows-native |
-| Images | `Pillow` | Standard, minimal footprint |
-| HTTP Requests | `requests` | Simple, reliable |
-| CLI | `Typer` | Modern, type-safe, beautiful help |
-| Configuration | `PyYAML` | Standard for config files |
-| OCR / AI | Ollama | Local vision models, no cloud |
-| Testing | `pytest` | Industry standard |
-| Code Quality | `ruff` | Fast, all-in-one (format, lint, type-check) |
+| Component | Tool | Role |
+|---|---|---|
+| PDF | pdfplumber | Page rendering, metadata |
+| Vision | Ollama (DeepSeek-OCR, Llava) | OCR and figure analysis |
+| Post-processing | OpenCV (Canny) | Edge detection for ASCII art |
+| CLI | Typer + Rich | Command line with progress bars |
+| GUI | NiceGUI | Web + native desktop interface |
+| Logging | loguru | ISO 8601, rotation, retention |
+| Testing | pytest + pytest-mock + pytest-cov | 41 tests, 57% coverage |
+| Quality | ruff + mypy | Lint, format, type check |
+
+## Development
+
+```powershell
+uv sync --all-extras     # Install with dev dependencies
+pytest                    # Run all tests
+pytest --cov=src          # With coverage report
+ruff format src tests     # Format
+ruff check src tests      # Lint
+mypy src                  # Type check
+```
 
 ## Troubleshooting
 
-### Ollama Connection Failed
+### Ollama not running
+```powershell
+ollama serve              # Start in a separate terminal
+```
 
-**Error:** `Could not connect to Ollama at http://localhost:11434`
+### Model not found
+```powershell
+ollama pull deepseek-ocr  # Primary OCR model
+ollama pull llava:13b     # For post-processing (optional)
+```
 
-**Solution:**
-1. Ensure Ollama is running: `ollama serve` in a terminal
-2. Check if running on different port: Update `ocrsuite.yaml` or use `--ollama-url http://localhost:PORT`
+### "Free OCR." prompt sensitive to input
 
-### Out of Memory
+DeepSeek-OCR uses a command DSL. OCRSuite sends `Free OCR.` as the default. Classification uses `<|grounding|>Given the layout of the image.` Missing punctuation or newlines may degrade output. See [Ollama DeepSeek-OCR docs](https://ollama.com/library/deepseek-ocr) for the full command reference.
 
-**Error:** Model inference fails with OOM errors
+### Slow processing
 
-**Solution:**
-1. Use a smaller model: `ollama pull llama2-vision` (7B instead of 13B)
-2. Process fewer pages at once
-3. Increase system swap/pagefile
-
-### Poor OCR Quality on Old Books
-
-**Tips:**
-- Increase DPI in config: `dpi: 400` or higher
-- Try different model: DeepSeek-OCR vs. Llama 3.2
-- Check PDF page quality; preprocessing may help
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Implement with tests
-4. Run code quality checks: `ruff format . && ruff check . --fix && mypy src`
-5. Submit a pull request
-
-See `SPECIFICATION.md` for architecture details and `LLMS.txt` for AI integration guidelines.
-
-## License
-
-MIT License – see [LICENSE](LICENSE) file.
-
-## Resources
-
-- [Ollama Models](https://ollama.ai) – Download vision models
-- [pdfplumber Documentation](https://github.com/jamesturk/pdfplumber)
-- [Pillow Documentation](https://pillow.readthedocs.io/)
-- [Typer Documentation](https://typer.tiangolo.com/)
-- [Project Specification](SPECIFICATION.md)
+- Reduce DPI (150-200 for drafts)
+- Limit pages with `--max-pages`
+- Use a smaller model (7B vs 13B)
+- Close GPU-intensive applications
 
 ## Roadmap
 
-- [x] MVP: Basic PDF → LaTeX/PNG/MD extraction
-- [ ] Batch processing multiple PDFs
-- [ ] Improved math formula detection
-- [ ] Custom model support
-- [ ] Web UI (Streamlit)
-- [ ] Performance optimizations
-- [ ] Docker deployment guide
+- [x] MVP: PDF → Markdown/LaTeX/PNG extraction
+- [x] Desktop/web GUI with live progress
+- [x] Post-processing: ASCII art + Markdown enrichment
+- [x] ISO 8601 loguru logging
+- [ ] Batch processing
+- [ ] Docker deployment
+- [ ] CI/CD via GitHub Actions
 
-## Citation
+## License
 
-If you use OCRSuite in research, please cite:
-
-```bibtex
-@software{ocrsuite2026,
-  author = {OCRSuite Contributors},
-  title = {OCRSuite: AI-powered PDF Processing for Old Books},
-  url = {https://github.com/Rumbleaxe/OCRSuite},
-  year = {2026}
-}
-```
-
-## Contact
-
-Questions or feedback? Open an issue on GitHub or contact the maintainers.
-
----
-
-MIT License. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

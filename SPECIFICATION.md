@@ -37,12 +37,9 @@ The app emphasizes local execution for privacy and control, avoiding cloud depen
 The app follows a pipeline architecture, processing the PDF in stages. High-level flow:
 
 1. **PDF Preprocessing**: Convert PDF to images or parse vector elements.
-2. **Layout Analysis**: Detect regions (text, math, tables, figures).
-3. **Extraction and Conversion**:
-   - Text and Math: OCR to LaTeX.
-   - Figures: Crop and save as PNG.
-   - Tables: Recognize and convert to Markdown.
-4. **Assembly and Output**: Compile results into files.
+2. **OCR and Extraction**: Send images to Ollama vision models for text/math/table/figure extraction.
+3. **Assembly and Output**: Compile extracted content into files.
+4. **Post-Processing (optional)**: Llava vision model enriches Markdown (tables, links, lists) and converts figures to ASCII art via Canny edge detection.
 
 ### 2.1 Components and Tools
 
@@ -97,11 +94,21 @@ We select the best free/OSS tools based on benchmarks for accuracy in handling o
 
 #### 2.1.7 Post-Processing and Assembly
 
-- **Tools**: Python scripts with libraries like pylatex for LaTeX generation.
+- **Tools**: Python scripts, pylatex for LaTeX generation, OpenCV for Canny edge detection.
 - **Role**:
-  - Compile text/math into a .tex file (e.g., wrap in \documentclass{article}).
-  - Generate Markdown for tables (one file per book or per table).
+  - Compile text/math into Markdown and LaTeX output.
   - Log errors (e.g., unrecognized regions).
+  - Optional: Llava vision model enriches Markdown (tables, links, lists) and converts figures to ASCII art.
+
+#### 2.1.8 Figure Post-Processing (Canny + Llava)
+
+- **Tool**: OpenCV (Canny edge detection) + Llava vision model.
+- **Role**: Convert extracted figures to ASCII art for lossless, readable output.
+  1. Load figure as grayscale.
+  2. Apply Canny edge detection (low=50, high=150) to extract structural edges.
+  3. Send edge image to Llava with prompt: "Describe this as ASCII art using box-drawing characters."
+  4. Output as fenced Markdown code block.
+- **Why?**: Canny reduces noise from degraded paper and highlights structural lines. Llava's general vision handles diverse figure types (diagrams, charts, illustrations).
 
 ### 2.2 Data Flow
 
@@ -109,8 +116,9 @@ We select the best free/OSS tools based on benchmarks for accuracy in handling o
 | --------------- | -------------- | ----------------------------- | --------------------------------------------- |
 | Preprocessing   | PDF file       | Convert to page images/vector | List of images/regions                        |
 | Layout Analysis | Page images    | Detect bounding boxes         | JSON with regions (text, math, table, figure) |
-| OCR/Extraction  | Regions        | Apply Ollama models/PaddleOCR | Raw text/LaTeX/math, table MD, figure crops   |
-| Assembly        | Extracted data | Compile                       | LaTeX.tex, figures/\*.png, tables.md          |
+| OCR/Extraction  | Regions        | Apply Ollama models           | Raw text/LaTeX/math, table MD, figure crops   |
+| Assembly        | Extracted data | Compile                       | extraction.md, figures/*.png                  |
+| Post-processing | extraction.md, figures | Llava vision model    | postprocessed.md (tables, links, ASCII art)   |
 
 ## 3. Implementation Details
 
@@ -119,10 +127,11 @@ We select the best free/OSS tools based on benchmarks for accuracy in handling o
 - **Language**: Python 3.12+ (for compatibility with tools).
 - **Dependencies** (all OSS):
   - Ollama: For hosting/running vision models.
-  - pdf2image, PyMuPDF: PDF handling.
-  - OpenCV: Image processing.
-  - PaddleOCR, Tesseract: Supplementary OCR.
-  - Marker/PDF-Extract-Kit: Pipeline inspiration (fork/extend if needed).
+  - pdfplumber: PDF page rendering (replaced pdf2image for Windows-native compatibility).
+  - OpenCV: Canny edge detection for figure post-processing.
+  - loguru: ISO 8601 structured logging with rotation and retention.
+  - NiceGUI: Desktop + web GUI with async pipeline execution.
+  - Typer + Rich: CLI with progress bars.
 - **Setup Script**: Automate model pulls (e.g., `ollama pull llama3.2-vision`).
 
 ### 3.2 User Interface
@@ -146,11 +155,12 @@ We select the best free/OSS tools based on benchmarks for accuracy in handling o
 
 ## 4. Development Roadmap
 
-1. **Prototype**: Integrate PDF to images + layout detection + basic OCR.
-2. **Core Features**: Add math/table/figure extraction.
-3. **Optimization**: Tune prompts, add fallbacks.
-4. **Testing**: On 5-10 sample old book PDFs.
-5. **Deployment**: Package as Docker container for easy local setup.
+1. **Prototype**: Integrate PDF to images + OCR.
+2. **Core Features**: Math, table, figure extraction.
+3. **Optimization**: Tune prompts for DeepSeek-OCR command DSL.
+4. **Testing**: 41 tests, 57% coverage on sample book PDFs.
+5. **GUI**: Desktop + web interface (NiceGUI) with live progress and bottleneck tracking.
+6. **Post-Processing**: Canny edge detection + Llava for ASCII art and Markdown enrichment.
 
 ## 5. References and Resources
 
@@ -169,7 +179,7 @@ To ensure the code is readable, maintainable, and efficient—hallmarks of profe
 - **Style and Formatting**: Adhere to PEP 8. Use Black for auto-formatting (line length 88) and isort for imports. Avoid dense code; favor clarity over cleverness.
 - **Modularity**: Break the pipeline into classes/modules (e.g., `pdf_preprocessor.py`, `layout_analyzer.py`). Use dependency injection for swappable components (e.g., via dataclasses or protocols).
 - **Type Hints**: Use typing (PEP 484) for all functions/classes. Employ mypy for static checking.
-- **Error Handling**: Use structured exceptions (custom subclasses of Exception) and logging (via logging module, not print). Implement retries for OCR with exponential backoff.
+- **Error Handling**: Use structured exceptions (custom subclasses of Exception) and loguru for structured logging (ISO 8601 timestamps, rotation, retention).
 - **Performance**: Profile with cProfile; optimize hotspots (e.g., parallelize page processing with concurrent.futures). Use context managers for resources (e.g., with open()).
 - **Documentation**: Inline docstrings (Google or NumPy style) for every function/class. Generate docs with Sphinx.
 - **Testing**: Aim for 80%+ coverage with pytest. Include unit tests (e.g., for layout detection), integration tests (full pipeline on sample PDFs), and edge cases (degraded scans).

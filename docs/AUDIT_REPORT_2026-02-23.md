@@ -5,6 +5,8 @@
 **Test File:** `books/book.pdf` (91.65 MB, 42 pages)  
 **Configuration:** DeepSeek-OCR model, 300s timeout, 300 DPI
 
+> **Update (July 2026):** The key finding below has been addressed. `ocr_image()` now uses `"Free OCR."` — the canonical DeepSeek-OCR command prompt. `classify_content()` uses `<|grounding|>Given the layout of the image.` Both match the model's expected command DSL. Logging migrated from stdlib `logging` to `loguru` (ISO 8601 timestamps, rotation, retention).
+
 ---
 
 ## Executive Summary

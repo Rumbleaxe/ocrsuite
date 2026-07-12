@@ -15,14 +15,14 @@ Agentic AIs should automate setup and building to ensure reproducible environmen
 ### 2.1 Process Steps
 1. **Environment Setup**:
    - Clone the repo: `git clone <repo_url>`.
-   - Install dependencies: Use Poetry (`poetry install --with dev` for dev deps like pytest, black).
-   - Pull Ollama models: Scripted via `ollama pull llama3.2-vision` (handle errors with retries).
-   - Windows-Specific: Detect OS; install Windows deps (e.g., via winget for Git, Python) and configure CUDA for GPU if available.
+    - Install dependencies: Use uv (`uv sync` for core, `uv sync --all-extras` for dev deps).
+    - Pull Ollama models: Scripted via `ollama pull deepseek-ocr` and `ollama pull llava:13b`.
+    - Windows-Specific: Detect OS; install Windows deps (e.g., via winget for Git, Python).
 
 2. **Build Pipeline**:
-   - Generate build scripts (e.g., Makefile or GitHub Actions YAML).
-   - Compile/package: `poetry build` for wheel/sdist; create Docker image (`docker build -t pdf-processor .`).
-   - Verify: Run smoke tests (e.g., `poetry run python src/main.py --version`).
+    - Generate build scripts (e.g., GitHub Actions YAML).
+    - Compile/package: `uv build` for wheel/sdist.
+    - Verify: Run smoke tests (e.g., `uv run ocrsuite version`).
 
 ### 2.2 AI Handling
 - **Copilot/Claude**: Suggest code completions for setup scripts; auto-generate Dockerfiles based on pyproject.toml.
@@ -34,10 +34,9 @@ Testing ensures reliability, especially for OCR accuracy on degraded PDFs.
 
 ### 3.1 Process Steps
 1. **Unit Tests**: Cover modules (e.g., test_preprocessor.py: Mock PDF input, assert image output).
-2. **Integration Tests**: End-to-end pipeline on sample PDFs (e.g., from tests/resources/).
-3. **Coverage and Benchmarks**: Run `poetry run pytest --cov=src` (aim 80%+); benchmark OCR speed/accuracy on datasets like old books from Project Gutenberg.
-4. **Windows-Specific**: Use CI runners to test multiprocessing (switch to ThreadPoolExecutor on Windows).
-5. **Edge Cases**: Test degraded scans, large PDFs, math-heavy pages.
+2. **Integration Tests**: End-to-end pipeline on sample PDFs (e.g., from tests/conftest.py fixtures).
+3. **Coverage and Benchmarks**: Run `pytest --cov=src` (aim 55%+); benchmark OCR speed/accuracy on datasets like old books.
+4. **Modules Under Test**: preprocessor, ollama_client, assembler, postprocessor, config, latex_verifier, CLI.
 
 ### 3.2 AI Handling
 - **Copilot/Claude**: Generate test cases from docstrings (e.g., "Write pytest for ocr_engine.py handling math formulas").
