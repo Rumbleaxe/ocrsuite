@@ -56,13 +56,7 @@ class OllamaClient:
             raise OllamaError(f"Image not found: {image_path}")
 
         if not prompt:
-            prompt = (
-                "Extract all text from this image. "
-                "Preserve formatting and structure. "
-                "For mathematical formulas, use LaTeX notation "
-                "(e.g., $x^2 + y^2 = z^2$). "
-                "For tables, describe the structure clearly."
-            )
+            prompt = "Read all text from this image."
 
         return self._call_vision_model(image_path, prompt)
 
@@ -86,6 +80,8 @@ class OllamaClient:
         )
 
         response = self._call_vision_model(image_path, prompt).strip().lower()
+        
+        logger.debug(f"Classification response for {image_path.stem}: '{response}'")
 
         # Extract first valid word from response to handle explanatory text
         valid_types = {"text", "table", "figure", "mixed", "unknown"}
@@ -103,7 +99,7 @@ class OllamaClient:
                     logger.debug(f"Extracted '{word}' from response: '{response}'")
                     break
             if content_type == "unknown":
-                logger.debug(f"Could not classify, defaulting to unknown. Response was: '{response}'")
+                logger.debug(f"Could not classify, defaulting to unknown. Response: '{response}'")
 
         return {"type": content_type, "confidence": 0.8}
 

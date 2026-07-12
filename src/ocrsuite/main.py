@@ -142,27 +142,23 @@ def process(
             extracted_content = []
             for image_path in image_paths:
                 try:
-                    # Classify content
-                    classification = client.classify_content(image_path)
-
-                    # Extract based on type
-                    if classification["type"] in ("text", "mixed"):
-                        text = client.ocr_image(image_path)
-                    elif classification["type"] == "table":
-                        text = client.extract_table(image_path)
-                    elif classification["type"] == "figure":
-                        # Save figure to figures directory
-                        figure_num = len([p for p in (assembler.figures_dir or Path("/dev/null")).glob("figure_*.png") if p.is_file()]) + 1
-                        rel_path = assembler.save_image(image_path, f"figure_{figure_num:03d}.png")
-                        text = f"![Figure {figure_num}]({assembler.get_figures_dirname()}/figure_{figure_num:03d}.png)"
+                    # Always attempt direct OCR extraction
+                    # Classification doesn't work reliably with DeepSeek-OCR
+                    text = client.ocr_image(image_path)
+                    
+                    # Try to detect if response is actually meaningful
+                    # (vs placeholder text)
+                    if text and text.strip() and "[Unrecognized" not in text:
+                        content_type = "text"
                     else:
-                        text = "[Unrecognized content]"
+                        content_type = "unknown"
+                        logger.debug(f"Page {image_path.stem}: empty or placeholder OCR response")
 
                     extracted_content.append(
                         {
                             "page": image_path.stem,
-                            "type": classification["type"],
-                            "content": text,
+                            "type": content_type,
+                            "content": text if text.strip() else "[Empty page or unrecognized content]",
                         }
                     )
 

@@ -29,7 +29,6 @@ output/
 *.pdf
 *.png
 *.tex
-*.md
 *.log
 
 config.yaml

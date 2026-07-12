@@ -12,7 +12,7 @@ Get OCRSuite running in 5 minutes on Windows.
 ### 1. Clone the Repository
 
 ```powershell
-git clone https://github.com/yourusername/ocrsuite.git
+git clone https://github.com/Rumbleaxe/OCRSuite.git
 cd ocrsuite
 ```
 
@@ -257,4 +257,4 @@ ocrsuite process --input book.pdf --model granite3.2-vision-abliterated --output
 
 ---
 
-**Ready to digitize your books!** 📚✨
+**Ready to start?** Run `ocrsuite process --input your_book.pdf --output ./output/`
