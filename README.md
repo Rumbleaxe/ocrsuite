@@ -37,20 +37,38 @@ ollama pull deepseek-ocr
 
 OCRSuite auto-builds `ocrsuite-deepseek` from the Modelfile on first use.
 
+## Launching
+
+All commands via `uv run` from the project root:
+
+```
+uv run ocrsuite        CLI (below)
+uv run ocrsuite-gui    Desktop + web GUI
+uv run pytest           Run tests
+```
+
+Without `uv`, install globally:
+
+```
+pip install -e .
+ocrsuite process --input book.pdf
+ocrsuite-gui
+```
+
 ## CLI Usage
 
 ```powershell
 # Basic processing
-ocrsuite process --input book.pdf --output ./output/
+uv run ocrsuite process --input book.pdf --output ./output/
 
 # With custom model, DPI, and verbose logging
-ocrsuite process --input book.pdf --model llava:13b --dpi 400 --verbose
+uv run ocrsuite process --input book.pdf --model llava:13b --dpi 400 --verbose
 
 # With post-processing (tables, links, ASCII art from figures)
-ocrsuite process --input book.pdf --output ./output/ --postprocess --postprocess-model llava:13b
+uv run ocrsuite process --input book.pdf --output ./output/ --postprocess --postprocess-model llava:13b
 
 # Process only first 10 pages with debug mode
-ocrsuite process --input book.pdf --max-pages 10 --verbose
+uv run ocrsuite process --input book.pdf --max-pages 10 --verbose
 ```
 
 ### Full options
@@ -69,11 +87,9 @@ ocrsuite process
 
 ## GUI
 
-Launch the desktop and web interface:
-
 ```powershell
-ocrsuite-gui              # Browser at http://localhost:8080
-ocrsuite-gui --native     # Desktop window
+uv run ocrsuite-gui              # Browser at http://localhost:8080
+uv run ocrsuite-gui --native     # Desktop window
 ```
 
 Features:
@@ -165,12 +181,12 @@ postprocess:
 ## Development
 
 ```powershell
-uv sync --all-extras     # Install with dev dependencies
-pytest                    # Run all tests
-pytest --cov=src          # With coverage report
-ruff format src tests     # Format
-ruff check src tests      # Lint
-mypy src                  # Type check
+uv sync --all-extras       # Install with dev dependencies
+uv run pytest               # Run all tests
+uv run pytest --cov=src     # With coverage report
+uv run ruff format src tests  # Format
+uv run ruff check src tests   # Lint
+uv run mypy src               # Type check
 ```
 
 ## Troubleshooting

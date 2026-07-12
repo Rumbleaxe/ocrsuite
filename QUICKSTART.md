@@ -22,71 +22,73 @@ ollama pull deepseek-ocr
 # Optionally: pull Llava for post-processing
 ollama pull llava:13b
 
-# Install OCRSuite with uv
+# Install dependencies
 uv sync
 ```
 
-## CLI
+## Run
+
+All commands use `uv run` from the project root:
 
 ```powershell
-# Process a PDF
-ocrsuite process --input mybook.pdf --output ./output/
+# CLI — process a PDF
+uv run ocrsuite process --input mybook.pdf --output ./output/
 
-# With post-processing (ASCII art + Markdown enrichment)
-ocrsuite process --input mybook.pdf --output ./output/ --postprocess
+# CLI — with post-processing
+uv run ocrsuite process --input mybook.pdf --output ./output/ --postprocess
 
-# Verbose mode for debugging
-ocrsuite process --input mybook.pdf -v
+# GUI — browser at http://localhost:8080
+uv run ocrsuite-gui
+
+# GUI — desktop window
+uv run ocrsuite-gui --native
+
+# Run tests
+uv run pytest
 ```
 
-## GUI
-
+Without `uv`, install globally first:
 ```powershell
-# Browser interface
+pip install -e .
+ocrsuite process --input mybook.pdf
 ocrsuite-gui
-
-# Desktop window
-ocrsuite-gui --native
 ```
-
-Open `http://localhost:8080` in your browser. Upload a PDF, configure settings, and press Process.
 
 ## Output
 
 ```
 output/
-├── 120726_114530_mybook.md           # Raw OCR extraction
-├── postprocessed_120726_114530_mybook.md  # Enriched with tables, links, ASCII art
-├── 120726_114530_mybook/             # Extracted figures
-│   ├── fig_001.png
-│   └── ...
-└── log.txt                           # ISO 8601 structured log
+├── 120726_114530_mybook.md
+├── postprocessed_120726_114530_mybook.md
+├── 120726_114530_mybook/
+│   └── fig_*.png
+└── log.txt
 ```
 
 ## Troubleshooting
 
 ### "Could not connect to Ollama"
 ```powershell
-ollama serve          # Start Ollama
+ollama serve
 ```
 
 ### "Model not found"
 ```powershell
-ollama pull deepseek-ocr    # Primary model
-ollama pull llava:13b        # Post-processing model
+ollama pull deepseek-ocr
+ollama pull llava:13b
 ```
 
 ### Poor OCR quality
-- Increase DPI: `ocrsuite process --config ocrsuite.yaml` with `dpi: 400`
+- Increase DPI: `dpi: 400` in config
 - Try a different model: `--model llava:13b`
-- Enable debug mode for intermediate images: set `debug_mode: true` in config
+- Enable debug mode for intermediate images
 
 ## Development
 
 ```powershell
-uv sync --all-extras    # Dev dependencies
-pytest                   # Run tests (41 passing)
-ruff format . && ruff check . --fix && mypy src   # Code quality
+uv sync --all-extras
+uv run pytest
+uv run ruff format . && uv run ruff check . --fix && uv run mypy src
 ```
 
-See [README.md](README.md) for full documentation and [SPECIFICATION.md](SPECIFICATION.md) for architecture details.
+See [README.md](README.md) for full documentation.
