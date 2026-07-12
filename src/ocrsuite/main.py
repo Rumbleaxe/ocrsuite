@@ -1,10 +1,11 @@
 """Main CLI entry point for OCRSuite."""
 
-import logging
+import shutil
 from pathlib import Path
 from typing import Optional
 
 import typer
+from loguru import logger
 from rich.console import Console
 from rich.progress import Progress
 
@@ -12,8 +13,9 @@ from . import __version__
 from .assembler import OutputAssembler
 from .config import Config
 from .ollama_client import OllamaClient
+from .postprocessor import PostProcessor
 from .preprocessor import PDFPreprocessor
-from .utils import OCRSuiteError, setup_logging
+from .utils import OCRSuiteError, init_logging
 
 app = typer.Typer(
     name="ocrsuite",
@@ -60,6 +62,16 @@ def process(
         "-v",
         help="Enable verbose logging.",
     ),
+    postprocess: bool = typer.Option(
+        False,
+        "--postprocess",
+        help="Post-process with vision model (tables, links, ASCII art).",
+    ),
+    postprocess_model: Optional[str] = typer.Option(
+        None,
+        "--postprocess-model",
+        help="Vision model for enrichment (default: llava:13b).",
+    ),
 ) -> None:
     """Process a PDF file and extract text, tables, and figures.
 
@@ -67,13 +79,16 @@ def process(
     1. Convert PDF pages to high-resolution images
     2. Send to Ollama for OCR and content classification
     3. Extract and convert content to LaTeX, PNG, and Markdown formats
-    4. Save results to the output directory
+    4. Optionally post-process with a vision model for enriched output
+    5. Save results to the output directory
     """
     output_path = Path(output)
-    log_file = setup_logging(output_path, verbose)
-    logger = logging.getLogger("ocrsuite")
+    init_logging(output_path, verbose)
     logger.info(f"Processing PDF: {input}")
     logger.info(f"Output directory: {output_path}")
+
+    if postprocess_model:
+        logger.info(f"Post-processing model override: {postprocess_model}")
 
     try:
         with Progress(console=console) as progress:
@@ -92,6 +107,10 @@ def process(
             if max_pages:
                 cfg.pdf.max_pages = max_pages
                 logger.info(f"Max pages limit: {max_pages}")
+            if postprocess:
+                cfg.postprocess.enabled = True
+            if postprocess_model:
+                cfg.postprocess.model = postprocess_model
 
             progress.update(task_config, completed=True)
             logger.info(f"Configuration ready: model={cfg.ollama.model}, dpi={cfg.pdf.dpi}, timeout={cfg.ollama.timeout}s")
@@ -192,9 +211,43 @@ def process(
             )
             logger.info(f"✓ Markdown document saved: {output_file.name}")
 
+            # Post-processing (optional)
+            if cfg.postprocess.enabled:
+                from .config import OllamaConfig
+
+                logger.info("Post-processing with vision model...")
+                task_pp = progress.add_task("[cyan]Post-processing with vision model...", total=None)
+
+                pp_client = OllamaClient(
+                    OllamaConfig(
+                        url=cfg.ollama.url,
+                        model=cfg.postprocess.model,
+                        timeout=cfg.ollama.timeout,
+                        max_retries=cfg.ollama.max_retries,
+                    )
+                )
+                processor = PostProcessor(
+                    pp_client,
+                    ascii_width=cfg.postprocess.ascii_width,
+                    canny_low=cfg.postprocess.canny_low,
+                    canny_high=cfg.postprocess.canny_high,
+                )
+
+                figures_dir = (
+                    assembler.figures_dir
+                    if assembler.figures_dir and assembler.figures_dir.exists()
+                    else None
+                )
+                enriched = processor.postprocess(output_file, figures_dir or output_path)
+
+                pp_path = output_path / f"postprocessed_{output_file.name}"
+                pp_path.write_text(enriched, encoding="utf-8")
+                progress.update(task_pp, completed=True)
+                console.print(f"[green]✓[/green] Post-processed: {pp_path.name}")
+                logger.info(f"✓ Post-processed document saved: {pp_path.name}")
+
             # Cleanup temp images if not debug mode
             if not cfg.output.debug_mode and temp_images_dir.exists():
-                import shutil
                 shutil.rmtree(temp_images_dir, ignore_errors=True)
 
             # Success summary
@@ -219,7 +272,7 @@ def process(
             console.print_exception()
         raise typer.Exit(code=1) from e
     finally:
-        logger.info(f"OCRSuite process finished. Log file: {log_file}")
+        logger.info("OCRSuite process finished.")
 
 
 @app.command()

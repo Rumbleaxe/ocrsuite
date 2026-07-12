@@ -1,14 +1,12 @@
 """PDF preprocessing and image conversion."""
 
-import logging
+from loguru import logger
 from pathlib import Path
 from typing import List
 
 import pdfplumber
 
 from .utils import PreprocessingError, ensure_directory
-
-logger = logging.getLogger(__name__)
 
 
 class PDFPreprocessor:

@@ -17,7 +17,7 @@ ollama:
   # Vision model to use for OCR
   # Available locally: llama3.2, llava:13b, granite3.2-vision-abliterated, glm-4.7-flash
   # Or try any model: llama2-uncensored, phi3, etc.
-  model: "llama3.2"
+  model: "ocrsuite-deepseek"
   
   # Request timeout in seconds
   timeout: 120

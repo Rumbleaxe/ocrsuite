@@ -1,13 +1,11 @@
 """Configuration loading and validation."""
 
-import logging
+from loguru import logger
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
 import yaml
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -49,6 +47,17 @@ class OutputConfig:
 
 
 @dataclass
+class PostProcessConfig:
+    """Vision model post-processing configuration."""
+
+    enabled: bool = False
+    model: str = "llava:13b"
+    ascii_width: int = 80
+    canny_low: int = 50
+    canny_high: int = 150
+
+
+@dataclass
 class Config:
     """Main configuration container."""
 
@@ -56,6 +65,7 @@ class Config:
     ollama: OllamaConfig = field(default_factory=OllamaConfig)
     ocr: OCRConfig = field(default_factory=OCRConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
+    postprocess: PostProcessConfig = field(default_factory=PostProcessConfig)
 
     @classmethod
     def from_file(cls, path: Path) -> "Config":
@@ -82,6 +92,7 @@ class Config:
             ollama=OllamaConfig(**data.get("ollama", {})),
             ocr=OCRConfig(**data.get("ocr", {})),
             output=OutputConfig(**data.get("output", {})),
+            postprocess=PostProcessConfig(**data.get("postprocess", {})),
         )
 
     @classmethod
@@ -99,6 +110,7 @@ class Config:
             ollama=OllamaConfig(**data.get("ollama", {})),
             ocr=OCRConfig(**data.get("ocr", {})),
             output=OutputConfig(**data.get("output", {})),
+            postprocess=PostProcessConfig(**data.get("postprocess", {})),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -129,5 +141,12 @@ class Config:
                 "format_markdown": self.output.format_markdown,
                 "extract_images": self.output.extract_images,
                 "debug_mode": self.output.debug_mode,
+            },
+            "postprocess": {
+                "enabled": self.postprocess.enabled,
+                "model": self.postprocess.model,
+                "ascii_width": self.postprocess.ascii_width,
+                "canny_low": self.postprocess.canny_low,
+                "canny_high": self.postprocess.canny_high,
             },
         }

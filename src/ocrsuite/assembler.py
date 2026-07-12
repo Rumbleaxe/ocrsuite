@@ -1,13 +1,11 @@
 """Output assembly and file generation."""
 
-import logging
+from loguru import logger
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
 from .utils import ExtractionError, ensure_directory
-
-logger = logging.getLogger(__name__)
 
 
 class OutputAssembler:

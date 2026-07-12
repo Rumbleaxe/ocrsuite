@@ -33,12 +33,16 @@ dependencies = [
     "rich>=13.0.0",            # Terminal UI enhancements
     "pylatexenc>=2.10",        # LaTeX parsing and verification
     "latexcodec>=3.0",         # LaTeX codec support
+    "nicegui>=2.0.0",          # Desktop + web GUI
+    "loguru>=0.7.0",           # ISO 8601 structured logging
+    "opencv-python-headless>=4.8.0",  # Canny edge detection
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
     "ruff>=0.1.0",             # All-in-one: linter, formatter, type-checker
     "mypy>=1.5.0",
     "types-PyYAML>=6.0",
@@ -47,13 +51,14 @@ dev = [
 
 [project.scripts]
 ocrsuite = "ocrsuite.main:app"
+ocrsuite-gui = "ocrsuite.gui:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ocrsuite"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers -v"
+addopts = "--strict-markers -v --cov=src/ocrsuite --cov-report=term-missing --cov-fail-under=55"
 markers = [
     "integration: marks tests as integration (deselect with '-m \"not integration\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -93,3 +98,6 @@ ignore = [
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.coverage.run]
+omit = ["src/ocrsuite/gui.py"]
