@@ -28,8 +28,11 @@ Output: Markdown, LaTeX, PNG figures.
 git clone https://github.com/Rumbleaxe/OCRSuite.git
 cd ocrsuite
 
-# Install with uv (recommended)
+# Install dependencies
 uv sync
+
+# Dev setup (tests, linting, type checking)
+uv sync --all-extras
 
 # Pull the OCR model and build the optimized variant
 ollama pull deepseek-ocr

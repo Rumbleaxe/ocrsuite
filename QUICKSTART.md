@@ -23,7 +23,8 @@ ollama pull deepseek-ocr
 ollama pull llava:13b
 
 # Install dependencies
-uv sync
+uv sync                     # For CLI + GUI
+uv sync --all-extras        # Includes dev tools (pytest, ruff, mypy)
 ```
 
 ## Run

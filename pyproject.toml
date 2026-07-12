@@ -34,7 +34,8 @@ dependencies = [
     "pylatexenc>=2.10",        # LaTeX parsing and verification
     "latexcodec>=3.0",         # LaTeX codec support
     "nicegui>=2.0.0",          # Desktop + web GUI
-    "loguru>=0.7.0",           # ISO 8601 structured logging
+    "pywebview>=5.0",           # Native desktop window (--native flag)
+    "loguru>=0.7.0",            # ISO 8601 structured logging
     "opencv-python-headless>=4.8.0",  # Canny edge detection
 ]
 
