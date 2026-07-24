@@ -1,7 +1,6 @@
 """Tests for Ollama client."""
 
 import base64
-from pathlib import Path
 
 import pytest
 
@@ -67,6 +66,7 @@ def test_ocr_image_default_prompt(sample_image, mocker):
 def test_retry_exhaustion(sample_image, mocker):
     mock_post = mocker.patch("requests.post")
     from requests.exceptions import ConnectionError as ReqConnectionError
+
     mock_post.side_effect = ReqConnectionError("Connection refused")
 
     config = OllamaConfig(url="http://localhost:11434", model="ocrsuite-deepseek", max_retries=2)

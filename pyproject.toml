@@ -95,6 +95,8 @@ select = [
 ]
 ignore = [
     "E501",   # Line too long (handled by formatter)
+    "C901",   # Complexity — acceptable for CLI entry points and GUI
+    "B008",   # typer.Option in defaults — required by Typer API
 ]
 
 [tool.ruff.format]

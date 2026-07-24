@@ -160,9 +160,7 @@ class LaTeXVerifier:
                 logger.warning(f"pdflatex compilation failed: {e}")
 
         # No compiler available
-        return False, (
-            "No LaTeX compiler found. Install Tectonic or pdflatex for PDF compilation."
-        )
+        return False, ("No LaTeX compiler found. Install Tectonic or pdflatex for PDF compilation.")
 
     def get_status(self) -> str:
         """Get verification status message.

@@ -93,7 +93,9 @@ class PostProcessor:
                 f"Output ONLY the ASCII art with no explanation."
             )
             ascii_art = self.client.ocr_image(edge_path, prompt=prompt)
-            return f"```\n{ascii_art}\n```" if ascii_art.strip() else f"![Figure]({image_path.name})"
+            return (
+                f"```\n{ascii_art}\n```" if ascii_art.strip() else f"![Figure]({image_path.name})"
+            )
 
         except Exception as e:
             logger.warning(f"ASCII art conversion failed for {image_path.name}: {e}")

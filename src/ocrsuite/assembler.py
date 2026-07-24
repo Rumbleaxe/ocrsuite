@@ -1,9 +1,10 @@
 """Output assembly and file generation."""
 
-from loguru import logger
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+
+from loguru import logger
 
 from .utils import ExtractionError, ensure_directory
 
@@ -58,7 +59,7 @@ class OutputAssembler:
             if title:
                 md_lines.append(f"# {title}\n")
                 md_lines.append(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n")
-            
+
             md_lines.append(content)
 
             # Add metadata section at end

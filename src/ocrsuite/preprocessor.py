@@ -1,10 +1,10 @@
 """PDF preprocessing and image conversion."""
 
-from loguru import logger
 from pathlib import Path
 from typing import List
 
 import pdfplumber
+from loguru import logger
 
 from .utils import PreprocessingError, ensure_directory
 

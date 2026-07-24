@@ -113,7 +113,9 @@ def process(
                 cfg.postprocess.model = postprocess_model
 
             progress.update(task_config, completed=True)
-            logger.info(f"Configuration ready: model={cfg.ollama.model}, dpi={cfg.pdf.dpi}, timeout={cfg.ollama.timeout}s")
+            logger.info(
+                f"Configuration ready: model={cfg.ollama.model}, dpi={cfg.pdf.dpi}, timeout={cfg.ollama.timeout}s"
+            )
             console.print(f"[green]✓[/green] Configuration loaded (model: {cfg.ollama.model})")
 
             # Check Ollama health
@@ -150,7 +152,9 @@ def process(
             console.print(f"[green]✓[/green] Converted {len(image_paths)} pages to images")
 
             # Initialize output
-            assembler = OutputAssembler(Path(output), source_filename=input.stem, debug=cfg.output.debug_mode)
+            assembler = OutputAssembler(
+                Path(output), source_filename=input.stem, debug=cfg.output.debug_mode
+            )
 
             # Process each image with Ollama
             task_ocr = progress.add_task(
@@ -164,7 +168,7 @@ def process(
                     # Always attempt direct OCR extraction
                     # Classification doesn't work reliably with DeepSeek-OCR
                     text = client.ocr_image(image_path)
-                    
+
                     # Try to detect if response is actually meaningful
                     # (vs placeholder text)
                     if text and text.strip() and "[Unrecognized" not in text:
@@ -177,7 +181,9 @@ def process(
                         {
                             "page": image_path.stem,
                             "type": content_type,
-                            "content": text if text.strip() else "[Empty page or unrecognized content]",
+                            "content": text
+                            if text.strip()
+                            else "[Empty page or unrecognized content]",
                         }
                     )
 
@@ -191,12 +197,12 @@ def process(
                 finally:
                     progress.update(task_ocr, advance=1)
 
-            pages_processed = assembler.metadata['pages_processed']
-            errors_count = len(assembler.metadata['errors'])
-            logger.info(f"✓ Extraction complete: {pages_processed} pages processed, {errors_count} errors")
-            console.print(
-                f"[green]✓[/green] Extracted content from {pages_processed} pages"
+            pages_processed = assembler.metadata["pages_processed"]
+            errors_count = len(assembler.metadata["errors"])
+            logger.info(
+                f"✓ Extraction complete: {pages_processed} pages processed, {errors_count} errors"
             )
+            console.print(f"[green]✓[/green] Extracted content from {pages_processed} pages")
 
             # Assemble single markdown output with linked figures
             logger.info("Assembling markdown output with linked figures...")
@@ -204,7 +210,7 @@ def process(
                 f"## {item['page']} ({item['type']})\n\n{item['content']}"
                 for item in extracted_content
             )
-            
+
             output_file = assembler.save_markdown(
                 md_content,
                 title=input.stem.replace("_", " ").title(),
@@ -216,7 +222,9 @@ def process(
                 from .config import OllamaConfig
 
                 logger.info("Post-processing with vision model...")
-                task_pp = progress.add_task("[cyan]Post-processing with vision model...", total=None)
+                task_pp = progress.add_task(
+                    "[cyan]Post-processing with vision model...", total=None
+                )
 
                 pp_client = OllamaClient(
                     OllamaConfig(
@@ -251,15 +259,18 @@ def process(
                 shutil.rmtree(temp_images_dir, ignore_errors=True)
 
             # Success summary
-            logger.info(f"OCRSuite processing completed successfully!")
+            logger.info("OCRSuite processing completed successfully!")
             console.print("\n[bold green]✓ Processing Complete![/bold green]\n")
             console.print(f"[bold]Output Directory:[/bold] {Path(output).resolve()}")
             console.print("[bold]Output File:[/bold]")
             console.print(f"  - {output_file.name}")
-            figures_found = len(list((assembler.figures_dir or Path("/dev/null")).glob("figure_*.png"))) if assembler.figures_dir else 0
+            figures_found = (
+                len(list((assembler.figures_dir or Path("/dev/null")).glob("figure_*.png")))
+                if assembler.figures_dir
+                else 0
+            )
             if figures_found > 0:
                 console.print(f"  - {assembler.get_figures_dirname()}/ ({figures_found} figures)")
-
 
     except OCRSuiteError as e:
         logger.error(f"OCRSuite error: {e}", exc_info=verbose)

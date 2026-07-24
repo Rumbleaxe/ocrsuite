@@ -1,6 +1,5 @@
 """Configuration loading and validation."""
 
-from loguru import logger
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional

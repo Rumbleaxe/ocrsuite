@@ -1,9 +1,5 @@
 """Tests for output assembler module."""
 
-from pathlib import Path
-
-import pytest
-
 from ocrsuite.assembler import OutputAssembler
 
 

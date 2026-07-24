@@ -1,10 +1,8 @@
 """Tests for post-processing module."""
 
-import tempfile
 from pathlib import Path
 
 import cv2
-import numpy as np
 import pytest
 
 from ocrsuite.config import OllamaConfig

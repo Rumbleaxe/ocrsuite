@@ -91,8 +91,7 @@ class OllamaClient:
             return str(data.get("response", "")).strip()
         except requests.ConnectionError as e:
             raise OllamaError(
-                f"Could not connect to Ollama at {self.url}. Is it running? "
-                f"Try: ollama serve"
+                f"Could not connect to Ollama at {self.url}. Is it running? Try: ollama serve"
             ) from e
         except requests.Timeout as e:
             raise OllamaError(f"Ollama request timed out after {self.timeout}s") from e
@@ -115,9 +114,7 @@ class OllamaClient:
             )
 
             if response.status_code != 200:
-                raise OllamaError(
-                    f"Ollama returned status {response.status_code}: {response.text}"
-                )
+                raise OllamaError(f"Ollama returned status {response.status_code}: {response.text}")
 
             data = response.json()
             result = data.get("response", "")
@@ -125,7 +122,7 @@ class OllamaClient:
 
         except requests.ConnectionError as e:
             if retry < self.max_retries:
-                wait_time = 2 ** retry
+                wait_time = 2**retry
                 logger.warning(
                     f"Connection failed, retrying in {wait_time}s "
                     f"(attempt {retry + 1}/{self.max_retries})"
@@ -133,8 +130,7 @@ class OllamaClient:
                 time.sleep(wait_time)
                 return self._call_vision_model(image_path, prompt, retry + 1)
             raise OllamaError(
-                f"Could not connect to Ollama at {self.url}. Is it running? "
-                f"Try: ollama serve"
+                f"Could not connect to Ollama at {self.url}. Is it running? Try: ollama serve"
             ) from e
 
         except requests.Timeout as e:

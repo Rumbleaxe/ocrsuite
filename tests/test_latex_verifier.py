@@ -3,8 +3,6 @@
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from ocrsuite.latex_verifier import LaTeXVerifier
 
 
@@ -23,10 +21,7 @@ def test_validate_valid_latex():
     with tempfile.TemporaryDirectory() as tmpdir:
         tex_file = Path(tmpdir) / "test.tex"
         tex_file.write_text(
-            "\\documentclass{article}\n"
-            "\\begin{document}\n"
-            "Hello, World!\n"
-            "\\end{document}\n"
+            "\\documentclass{article}\n\\begin{document}\nHello, World!\n\\end{document}\n"
         )
         is_valid, errors = verifier.validate_latex_syntax(tex_file)
         assert is_valid, f"LaTeX validation failed with errors: {errors}"

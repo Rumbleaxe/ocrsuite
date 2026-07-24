@@ -30,11 +30,30 @@ output/
 *.png
 *.tex
 *.log
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.zip
+*.gz
+*.tar
+*.7z
+
+.rpyc
+.ruff_cache/
+.tox/
+.nox/
 
 config.yaml
 ocrsuite.yaml
 .env
 .env.local
+
+# Test artifacts
+test_output/
+tests/resources/**/*.pdf
+tests/resources/**/*.png
 
 # Windows
 Thumbs.db

@@ -1,6 +1,5 @@
 """Shared fixtures for OCRSuite tests."""
 
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -31,6 +30,7 @@ def sample_image(tmp_path: Path) -> Path:
     # Create a 10x10 white image and encode as PNG
     img = np.full((10, 10, 3), 255, dtype=np.uint8)
     import cv2
+
     cv2.imwrite(str(img_path), img)
     return img_path
 
